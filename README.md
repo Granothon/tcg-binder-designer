@@ -13,14 +13,17 @@ Unlike collection management apps that focus on tracking cards, Michify is a **p
 ## Features
 
 - **Custom binder dimensions**: Set exact pocket width, height, and seam sizes for your specific binder
-- **Multi-pocket image slots**: Design artwork spanning 1x1 up to 5x5 pockets
+- **Multi-pocket image slots**: Design artwork spanning multiple pockets in any rectangular configuration
 - **Michi Method support**: Handle cut and continuous seams (side-loading binders where pockets face each other)
 - **Absolute mm-based sizing**: Same zoom shows the same image size across different slot dimensions
 - **Smart image handling**: Auto-fit cover mode, drag to pan, wheel to zoom, arrow keys for pixel-precision
 - **Clone and duplicate**: Copy image crops between slots, extend images seamlessly to neighboring slots
 - **Multi-page projects**: Design a whole binder in one session, save as JSON for later editing
-- **A4 and A3 printing**: Portrait or landscape, with automatic fit checking
+- **Size Guide reference**: See all possible slot dimensions calculated from your binder measurements
 - **Locked panning**: Images can't create empty white space, only zoom and crop within the slot
+- **Smart bin-packing printing**: Automatically arranges pieces on A4/A3 sheets with proper cutting margins
+- **Automatic corner rounding**: Prints with rounded corners (no corner cutter needed) for professional-looking inserts
+- **A4 and A3 printing**: Portrait or landscape orientation with automatic fit checking
 
 ## How to use
 
@@ -32,7 +35,8 @@ Unlike collection management apps that focus on tracking cards, Michify is a **p
 6. Click or drag over pockets to select an area
 7. Drop an image onto the selected area
 8. Adjust the crop with your mouse (drag to pan, wheel to zoom) or arrow keys
-9. Click "Print / PDF" to export at the exact size for your binder
+9. Optionally check the Size Guide to see all possible slot dimensions
+10. Click "Print / PDF" to export at the exact size for your binder
 
 ## Understanding seams
 
@@ -50,17 +54,31 @@ The pocket dimensions in Michify refer to the **practical inside area** where a 
 
 For seams, measure the visible gap between two adjacent pocket openings when cards are inserted. Most modern binders have 2-4mm seams.
 
+## Printing tips
+
+Michify handles the complex parts of printing automatically:
+
+- **Bin packing**: Multiple images are arranged efficiently on each A4 or A3 sheet, rotating pieces when needed to save paper
+- **Cutting margins**: The gap between printed pieces matches your binder's seam width, so you can cut straight lines with a paper cutter
+- **Rounded corners**: Enable "Round corners for cutting" in the print dialog to add professional-looking rounded corners automatically. No corner cutter tool needed.
+- **Physical accuracy**: All measurements are in real millimeters. Print at 100% scale (not "fit to page") for pixel-perfect results.
+
+For best results, use matte cardstock (around 300gsm) rather than regular printer paper. It feels closer to real cards in the binder pocket.
+
 ## Development
 
 Michify is a single-page web app built with vanilla HTML, CSS, and JavaScript. No frameworks, no build step, no dependencies.
 
-tcg-binder-designer/
-├── index.html HTML structure
-├── style.css Styling and layout
-├── app.js Application logic
-├── README.md This file
-└── LICENSE MIT license
+Project structure:
 
+```
+tcg-binder-designer/
+├── index.html    HTML structure
+├── style.css     Styling and layout
+├── app.js        Application logic
+├── README.md     This file
+└── LICENSE       MIT license
+```
 
 To run locally, just open `index.html` in a browser. For development with hot reload, use VSCode's Live Server extension or any local static server.
 
@@ -82,8 +100,8 @@ Michify is an independent tool that supports designing for this method with prec
 
 Community resources:
 - [@peeplop on Instagram](https://instagram.com/peeplop) - original creator
-- [Michi Method community Discord](https://discord.gg/) (link via @peeplop's Instagram)
-- [Full Michi Method guide by woahpoke](https://woahpoke.com/) - excellent introduction
+- Michi Method community Discord (link available via @peeplop's Instagram bio)
+- [Full Michi Method guide by woahpoke](https://woahpoke.com/) - excellent introduction to the technique
 
 ## License
 

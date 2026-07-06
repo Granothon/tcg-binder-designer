@@ -1169,6 +1169,11 @@ function getPaperDimensions() {
   return { w, h, margin, usableW: w - 2 * margin, usableH: h - 2 * margin, size, orient };
 }
 
+function toggleCornerRadius() {
+  const enabled = document.getElementById('round-corners').checked;
+  document.getElementById('corner-radius-field').style.display = enabled ? 'flex' : 'none';
+}
+
 function updatePrintFit() {
   const paper = getPaperDimensions();
   const resultEl = document.getElementById('print-fit-result');
@@ -1225,7 +1230,6 @@ function updatePrintFit() {
   window._printPaper = paper;
   window._printGap = gapMm;
 }
-
 function confirmPrint() {
   const paper = window._printPaper;
   const result = window._printResult;
@@ -1236,6 +1240,10 @@ function confirmPrint() {
     return;
   }
 
+  // Get corner radius setting
+  const roundCorners = document.getElementById('round-corners').checked;
+  const cornerRadiusMm = roundCorners ? parseFloat(document.getElementById('corner-radius').value) : 0;
+
   const styleEl = document.createElement('style');
   styleEl.id = 'dynamic-print-style';
   styleEl.textContent = '@page { size: ' + paper.size + ' ' + paper.orient + '; margin: ' + paper.margin + 'mm; }';
@@ -1243,13 +1251,13 @@ function confirmPrint() {
   if (oldStyle) oldStyle.remove();
   document.head.appendChild(styleEl);
   closePrintDialog();
-  preparePrint(result, paper, gapMm);
+  preparePrint(result, paper, gapMm, cornerRadiusMm);
 }
 
 // ============================================================
 // PRINT RENDERING - New bin-packed layout
 // ============================================================
-function preparePrint(packResult, paper, gapMm) {
+function preparePrint(packResult, paper, gapMm, cornerRadiusMm) {
   const canvasArea = document.getElementById('canvas-area');
   const MM_TO_PX = 96 / 25.4;
   canvasArea.innerHTML = '';
@@ -1264,7 +1272,7 @@ function preparePrint(packResult, paper, gapMm) {
     sheetDiv.style.margin = '0 auto';
 
     sheet.placements.forEach(placement => {
-      renderPrintPiece(sheetDiv, placement, MM_TO_PX);
+      renderPrintPiece(sheetDiv, placement, MM_TO_PX, cornerRadiusMm);
     });
 
     canvasArea.appendChild(sheetDiv);
@@ -1281,7 +1289,7 @@ function preparePrint(packResult, paper, gapMm) {
   }, 100);
 }
 
-function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
+function renderPrintPiece(sheetDiv, placement, MM_TO_PX, cornerRadiusMm) {
   const piece = placement.piece;
   const orient = placement.orient;
   const img = piece.image;
@@ -1295,12 +1303,12 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   pieceDiv.style.height = (orient.h * MM_TO_PX) + 'px';
   pieceDiv.style.overflow = 'hidden';
 
-  // The image needs to be positioned so that the correct portion shows within the piece
-  // The piece corresponds to a sub-rectangle of the original slot, at offset (piece.offsetX_mm, piece.offsetY_mm)
-  // The image inside the original slot is at (img.xMm, img.yMm) with width img.widthMm
+  // Apply rounded corners if requested
+  if (cornerRadiusMm && cornerRadiusMm > 0) {
+    pieceDiv.style.borderRadius = (cornerRadiusMm * MM_TO_PX) + 'px';
+  }
 
-  // For non-rotated placement:
-  // In original coordinates: image position within piece = (img.xMm - piece.offsetX_mm, img.yMm - piece.offsetY_mm)
+  // The image needs to be positioned so that the correct portion shows within the piece
   const imgEl = document.createElement('img');
   imgEl.src = img.src;
   imgEl.style.position = 'absolute';
@@ -1313,9 +1321,6 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
     imgEl.style.transform = 'rotate(' + img.rotate + 'deg)';
     imgEl.style.transformOrigin = 'top left';
   } else {
-    // Rotated 90° for bin packing
-    // The piece is placed with swapped dimensions
-    // We rotate the whole content 90° clockwise
     imgEl.style.left = '0px';
     imgEl.style.top = '0px';
     imgEl.style.transform = 'rotate(90deg) translateY(-100%) translate(' +
@@ -1324,9 +1329,6 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
     imgEl.style.transformOrigin = 'top left';
   }
   pieceDiv.appendChild(imgEl);
-
-  // Add small label to help user identify pieces (visible only on screen preview, hidden on print)
-  // Skipping for now to keep print clean
 
   sheetDiv.appendChild(pieceDiv);
 }

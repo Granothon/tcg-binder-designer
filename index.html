@@ -14,41 +14,6 @@
 <meta name="description" content="Free open-source tool for designing TCG binder art with millimeter-perfect print output. Plan Michi Method spreads and custom binder layouts.">
 <title>Michify - TCG Binder Designer</title>
 <link rel="stylesheet" href="style.css">
-<style>
-  /* Modal link contrast fix */
-  .modal a {
-    color: #FFB000;
-    text-decoration: underline;
-    font-weight: 500;
-  }
-  .modal a:hover {
-    color: #ffc333;
-    text-decoration: none;
-  }
-  .modal a.accent,
-  .modal a.secondary {
-    text-decoration: none;
-  }
-  .modal a.accent {
-    color: #1a1a1a;
-  }
-  .modal a.secondary {
-    color: #eaeaea;
-  }
-  .modal .attribution {
-    font-size: 12px;
-    color: #999;
-    padding: 10px;
-    background: #1e1e1e;
-    border-left: 3px solid #FFB000;
-    border-radius: 3px;
-    line-height: 1.5;
-    margin-bottom: 12px;
-  }
-  .modal .attribution a {
-    color: #FFB000;
-  }
-</style>
 </head>
 <body>
 
@@ -63,6 +28,7 @@
   <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="support-link">
     ☕ Buy me a coffee
   </a>
+  <button onclick="openSizeGuideDialog()">Size Guide</button>
   <button onclick="openAboutDialog()">About</button>
   <button onclick="openPrintDialog()">Print / PDF</button>
 </header>
@@ -70,10 +36,10 @@
 <div id="sidebar">
   <h2>Pages</h2>
   <div id="pages-list" class="pages-list"></div>
-  <button class="secondary" onclick="addPage()" style="width:100%">+ Add page</button>
-  <button class="secondary" onclick="duplicatePage()" style="width:100%;margin-top:5px">Duplicate current</button>
+  <button class="secondary full-width" onclick="addPage()">+ Add page</button>
+  <button class="secondary full-width mt-5" onclick="duplicatePage()">Duplicate current</button>
   
-  <h2 style="margin-top:20px">Binder dimensions</h2>
+  <h2 class="mt-20">Binder dimensions</h2>
   <div class="subsection">
     <div class="field"><label>Rows</label><input type="number" id="rows" min="1" max="5" value="3" onchange="updateBinder()"></div>
     <div class="field"><label>Columns</label><input type="number" id="cols" min="1" max="5" value="3" onchange="updateBinder()"></div>
@@ -87,16 +53,16 @@
   <div class="subsection">
     <div class="field"><label>Zoom (%)</label><input type="number" id="view-scale" min="30" max="500" value="100" step="10" onchange="updateBinder()"></div>
     <div class="legend">
-      <div class="legend-item"><div class="legend-swatch" style="background:rgba(244,50,86,0.6)"></div>Cut</div>
-      <div class="legend-item"><div class="legend-swatch" style="background:rgba(71,230,193,0.6)"></div>Continuous</div>
-      <div class="legend-item"><div class="legend-swatch" style="background:rgba(200,200,200,0.85)"></div>Lost area</div>
+      <div class="legend-item"><div class="legend-swatch swatch-cut"></div>Cut</div>
+      <div class="legend-item"><div class="legend-swatch swatch-continuous"></div>Continuous</div>
+      <div class="legend-item"><div class="legend-swatch swatch-lost"></div>Lost area</div>
     </div>
   </div>
   
-  <h2 style="margin-top:20px">Seams</h2>
+  <h2 class="mt-20">Seams</h2>
   <div class="subsection">
-    <button class="secondary" style="width:100%" onclick="setAllSeams('cut')">All CUT</button>
-    <button class="secondary" style="width:100%;margin-top:5px" onclick="setAllSeams('continuous')">All CONTINUOUS</button>
+    <button class="secondary full-width" onclick="setAllSeams('cut')">All CUT</button>
+    <button class="secondary full-width mt-5" onclick="setAllSeams('continuous')">All CONTINUOUS</button>
     <div class="info">Click any seam on canvas to toggle between cut and continuous.</div>
   </div>
 </div>
@@ -105,18 +71,18 @@
 
 <div id="properties">
   <h2>Selected <span id="clipboard-indicator"></span></h2>
-  <div class="subsection" id="pocket-props"><div style="color:#888;font-size:12px">No selection</div></div>
+  <div class="subsection" id="pocket-props"><div class="empty-note">No selection</div></div>
   
   <div id="slot-size-section">
-    <h2 style="margin-top:20px">Slot size (pockets)</h2>
+    <h2 class="mt-20">Slot size (pockets)</h2>
     <div class="subsection">
       <div class="field"><label>Width</label><input type="number" id="slot-w" min="1" max="5" value="1" onchange="resizeSlot()"></div>
       <div class="field"><label>Height</label><input type="number" id="slot-h" min="1" max="5" value="1" onchange="resizeSlot()"></div>
     </div>
   </div>
   
-  <div id="image-section" style="display:none">
-    <h2 style="margin-top:20px">Image crop (mm)</h2>
+  <div id="image-section" class="hidden">
+    <h2 class="mt-20">Image crop (mm)</h2>
     <div class="subsection">
       <div class="field"><label>Image width</label><input type="number" id="img-width-mm" min="10" max="2000" value="100" step="1" onchange="updateImageProps()"></div>
       <div class="field"><label>X offset</label><input type="number" id="img-x-mm" value="0" step="0.5" onchange="updateImageProps()"></div>
@@ -127,19 +93,19 @@
         <button onclick="autoFitCover()" title="Fit">Fit</button>
         <button onclick="zoomImage(5)" title="Zoom in">+</button>
       </div>
-      <button class="secondary" style="width:100%;margin-top:8px" onclick="removeImage()">Remove image</button>
+      <button class="secondary full-width mt-8" onclick="removeImage()">Remove image</button>
       <div class="info">Wheel = zoom, drag = pan, arrows = 1mm (shift = 10mm).</div>
     </div>
     
-    <h2 style="margin-top:20px">Clone</h2>
+    <h2 class="mt-20">Clone</h2>
     <div class="subsection">
-      <button class="accent" style="width:100%" onclick="copyImageSettings()">Copy crop to clipboard</button>
-      <button class="secondary" style="width:100%;margin-top:5px" id="paste-btn" onclick="pasteImageSettings()" disabled>Paste crop here</button>
+      <button class="accent full-width" onclick="copyImageSettings()">Copy crop to clipboard</button>
+      <button class="secondary full-width mt-5" id="paste-btn" onclick="pasteImageSettings()" disabled>Paste crop here</button>
     </div>
     
-    <h2 style="margin-top:20px">Duplicate to neighbor</h2>
+    <h2 class="mt-20">Duplicate to neighbor</h2>
     <div class="subsection">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+      <div class="duplicate-grid">
         <button class="secondary" onclick="duplicateToNeighbor('left')">← Left</button>
         <button class="secondary" onclick="duplicateToNeighbor('right')">Right →</button>
         <button class="secondary" onclick="duplicateToNeighbor('up')">↑ Up</button>
@@ -149,8 +115,8 @@
     </div>
   </div>
   
-  <h2 style="margin-top:20px">Physical size</h2>
-  <div class="subsection" id="physical-info" style="font-size:11px;color:#bbb;line-height:1.7"></div>
+  <h2 class="mt-20">Physical size</h2>
+  <div class="subsection physical-info-box" id="physical-info"></div>
 </div>
 
 <div class="status-bar" id="status-bar">Click or drag over pockets to select area, then drop image</div>
@@ -177,6 +143,16 @@
       <label>Margin (mm)</label>
       <input type="number" id="paper-margin" value="5" min="0" max="20" step="1" onchange="updatePrintFit()">
     </div>
+    <div class="field checkbox-field">
+      <label>
+        <input type="checkbox" id="round-corners" checked onchange="toggleCornerRadius()">
+        Round corners for cutting
+      </label>
+    </div>
+    <div class="field" id="corner-radius-field">
+      <label>Corner radius (mm)</label>
+      <input type="number" id="corner-radius" value="3" min="0" max="10" step="0.5">
+    </div>
     <div id="print-fit-result"></div>
     <div class="modal-actions">
       <button class="secondary" onclick="closePrintDialog()">Cancel</button>
@@ -185,17 +161,37 @@
   </div>
 </div>
 
+<!-- Size Guide dialog -->
+<div class="modal-backdrop" id="size-guide-modal">
+  <div class="modal size-guide-modal">
+    <h3>Size Guide</h3>
+    <p class="size-guide-intro">
+      Calculated from your current binder dimensions: pocket <span id="sg-pocket-info">68 × 93 mm</span>, 
+      seams <span id="sg-seam-info">2 mm</span>.
+    </p>
+    <div id="size-guide-content"></div>
+    <p class="size-guide-note">
+      These sizes include your specified seam widths between pockets, so images spanning multiple pockets 
+      show the full physical dimensions needed for printing. When seams are set to "continuous" in your 
+      layout, the image continues across the seam. When "cut", the seam area is not printed (image is split).
+    </p>
+    <div class="modal-actions">
+      <button class="accent" onclick="closeSizeGuideDialog()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- About dialog -->
 <div class="modal-backdrop" id="about-modal">
   <div class="modal">
     <h3>About Michify</h3>
-    <p style="margin-bottom:12px">
+    <p class="modal-para">
       A precision printing tool for TCG binder art layouts. Design custom inserts,
       plan Michi Method spreads, and export print-ready layouts with millimeter-accurate
       dimensions.
     </p>
-    <p style="margin-bottom:12px">
-      <b>Version:</b> 3.0<br>
+    <p class="modal-para">
+      <b>Version:</b> 3.1<br>
       <b>License:</b> MIT (free and open source)<br>
       <b>Author:</b> Risto Ruuskanen
     </p>
@@ -205,21 +201,18 @@
       on Instagram. Michify is an independent tool that supports designing for this method 
       but is not officially affiliated with any Michi Method creators or communities.
     </div>
-    <p style="margin-bottom:12px">
+    <p class="modal-para">
       This tool is free to use. If it saved you time, consider buying me a coffee
       to help maintain and improve it.
     </p>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" 
-         class="accent" style="text-decoration:none;padding:8px 14px;display:inline-block;background:#FFB000;color:#1a1a1a;border-radius:4px;font-weight:600;font-size:12px">
+    <div class="modal-link-buttons">
+      <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="modal-btn modal-btn-accent">
         ☕ Buy me a coffee
       </a>
-      <a href="https://github.com/granothon/tcg-binder-designer" target="_blank" rel="noopener"
-         class="secondary" style="text-decoration:none;padding:8px 14px;display:inline-block;background:#333;color:#eaeaea;border:1px solid #444;border-radius:4px;font-size:12px">
+      <a href="https://github.com/granothon/tcg-binder-designer" target="_blank" rel="noopener" class="modal-btn modal-btn-secondary">
         View source on GitHub
       </a>
-      <a href="https://github.com/granothon/tcg-binder-designer/issues" target="_blank" rel="noopener"
-         class="secondary" style="text-decoration:none;padding:8px 14px;display:inline-block;background:#333;color:#eaeaea;border:1px solid #444;border-radius:4px;font-size:12px">
+      <a href="https://github.com/granothon/tcg-binder-designer/issues" target="_blank" rel="noopener" class="modal-btn modal-btn-secondary">
         Report issue / request feature
       </a>
     </div>

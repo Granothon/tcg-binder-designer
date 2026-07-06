@@ -25,6 +25,27 @@ body {
 }
 
 /* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+.hidden {
+  display: none !important;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.mt-5 { margin-top: 5px; }
+.mt-8 { margin-top: 8px; }
+.mt-20 { margin-top: 20px; }
+
+.duplicate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+/* ============================================================
    HEADER
    ============================================================ */
 header {
@@ -47,10 +68,8 @@ header .tagline {
   font-size: 11px;
   color: #888;
   margin-right: 20px;
-  padding-left: 6px;
-  border-left: 1px solid #444;
   padding-left: 10px;
-  margin-left: 4px;
+  border-left: 1px solid #444;
 }
 
 header button {
@@ -385,6 +404,17 @@ button.accent:disabled {
   margin-bottom: 12px;
 }
 
+.empty-note {
+  color: #888;
+  font-size: 12px;
+}
+
+.physical-info-box {
+  font-size: 11px;
+  color: #bbb;
+  line-height: 1.7;
+}
+
 /* ============================================================
    STATUS BAR
    ============================================================ */
@@ -439,6 +469,18 @@ input[type="file"] {
   border-radius: 2px;
 }
 
+.swatch-cut {
+  background: rgba(244, 50, 86, 0.6);
+}
+
+.swatch-continuous {
+  background: rgba(71, 230, 193, 0.6);
+}
+
+.swatch-lost {
+  background: rgba(200, 200, 200, 0.85);
+}
+
 .clipboard-indicator {
   display: inline-block;
   padding: 2px 6px;
@@ -488,6 +530,10 @@ input[type="file"] {
   line-height: 1.6;
 }
 
+.modal .modal-para {
+  margin-bottom: 12px;
+}
+
 .modal .modal-actions {
   display: flex;
   gap: 10px;
@@ -502,6 +548,94 @@ input[type="file"] {
 .modal .field input,
 .modal .field select {
   width: 140px;
+}
+
+.modal .field.checkbox-field {
+  display: block;
+}
+
+.modal .field.checkbox-field label {
+  color: #eaeaea;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal .field.checkbox-field input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
+  accent-color: #FFB000;
+}
+
+/* Modal links */
+.modal a {
+  color: #FFB000;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.modal a:hover {
+  color: #ffc333;
+  text-decoration: none;
+}
+
+/* Attribution block in About modal */
+.modal .attribution {
+  font-size: 12px;
+  color: #999;
+  padding: 10px;
+  background: #1e1e1e;
+  border-left: 3px solid #FFB000;
+  border-radius: 3px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.modal .attribution a {
+  color: #FFB000;
+}
+
+/* Modal link buttons (About dialog buttons) */
+.modal-link-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.modal-btn {
+  text-decoration: none;
+  padding: 8px 14px;
+  display: inline-block;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.modal-btn-accent {
+  background: #FFB000;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.modal-btn-accent:hover {
+  background: #ffc333;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.modal-btn-secondary {
+  background: #333;
+  color: #eaeaea;
+  border: 1px solid #444;
+}
+
+.modal-btn-secondary:hover {
+  background: #3d3d3d;
+  color: #eaeaea;
+  text-decoration: none;
 }
 
 /* ============================================================
@@ -525,6 +659,90 @@ input[type="file"] {
   background: rgba(244, 50, 86, 0.15);
   color: #F43256;
   border: 1px solid #F43256;
+}
+
+/* ============================================================
+   SIZE GUIDE DIALOG
+   ============================================================ */
+.modal.size-guide-modal {
+  min-width: 600px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.size-guide-intro {
+  font-size: 12px;
+  color: #bbb;
+  margin-bottom: 16px;
+}
+
+.size-guide-note {
+  font-size: 11px;
+  color: #888;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+.size-guide-section {
+  margin-bottom: 24px;
+}
+
+.size-guide-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFB000;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #333;
+}
+
+.size-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.size-guide-item {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.size-guide-item .preview {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.size-guide-item .preview-box {
+  background: #FFB000;
+  opacity: 0.7;
+  border-radius: 3px;
+}
+
+.size-guide-item .label {
+  font-weight: 600;
+  color: #FFB000;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.size-guide-item .mm {
+  font-size: 12px;
+  color: #eaeaea;
+  margin-bottom: 2px;
+}
+
+.size-guide-item .inches {
+  font-size: 11px;
+  color: #888;
 }
 
 /* ============================================================
@@ -583,28 +801,4 @@ input[type="file"] {
   @page {
     margin: 5mm;
   }
-}
-
-/* ============================================================
-   MODAL LINKS - fix contrast issue
-   ============================================================ */
-.modal a {
-  color: #FFB000;
-  text-decoration: underline;
-  font-weight: 500;
-}
-
-.modal a:hover {
-  color: #ffc333;
-  text-decoration: none;
-}
-
-.modal a.accent,
-.modal a.secondary {
-  text-decoration: none;
-  color: inherit;
-}
-
-.modal a.accent {
-  color: #1a1a1a;
 }
