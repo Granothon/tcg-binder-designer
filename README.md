@@ -1,0 +1,94 @@
+# Michify
+
+An open-source binder art designer for TCG (Trading Card Game) collections. Design custom inserts, plan Michi Method spreads, and export print-ready layouts with millimeter precision.
+
+**Live app:** [granothon.github.io/tcg-binder-designer](https://granothon.github.io/tcg-binder-designer/)
+
+## What is this?
+
+Michify makes it easy to design and print binder art without manual measuring or complicated software. Whether you're building a Pokémon 151 spread, creating custom Magic binder pages, or planning Yu-Gi-Oh! collection layouts, Michify handles the math so you can focus on the design.
+
+Unlike collection management apps that focus on tracking cards, Michify is a **precision printing tool**: it produces printable images that fit your binder pockets exactly.
+
+## Features
+
+- **Custom binder dimensions**: Set exact pocket width, height, and seam sizes for your specific binder
+- **Multi-pocket image slots**: Design artwork spanning 1x1 up to 5x5 pockets
+- **Michi Method support**: Handle cut and continuous seams (side-loading binders where pockets face each other)
+- **Absolute mm-based sizing**: Same zoom shows the same image size across different slot dimensions
+- **Smart image handling**: Auto-fit cover mode, drag to pan, wheel to zoom, arrow keys for pixel-precision
+- **Clone and duplicate**: Copy image crops between slots, extend images seamlessly to neighboring slots
+- **Multi-page projects**: Design a whole binder in one session, save as JSON for later editing
+- **A4 and A3 printing**: Portrait or landscape, with automatic fit checking
+- **Locked panning**: Images can't create empty white space, only zoom and crop within the slot
+
+## How to use
+
+1. Open the [live app](https://granothon.github.io/tcg-binder-designer/) in your browser
+2. Measure your binder's actual pocket dimensions with a ruler
+3. Enter the measurements in the sidebar (pocket width, height, seam sizes)
+4. Set the layout (rows × columns)
+5. Configure seams by clicking them (red = cut, teal = continuous)
+6. Click or drag over pockets to select an area
+7. Drop an image onto the selected area
+8. Adjust the crop with your mouse (drag to pan, wheel to zoom) or arrow keys
+9. Click "Print / PDF" to export at the exact size for your binder
+
+## Understanding seams
+
+Binders come in different styles, and the seams between pockets behave differently:
+
+**Cut seams** are where the binder material sits between two pockets. The image is lost in this area (typically 2-5mm). Michify shows this as a gray strip in the preview so you know what disappears.
+
+**Continuous seams** exist in side-loading binders where two pockets face each other with their openings pointing toward the same seam. In these binders, an image can slide behind the seam material into both pockets, creating a seamless visual across the gap.
+
+Not sure what your binder has? Look at a pair of adjacent pockets and check which direction each one opens. If they open toward each other (openings pointing at the seam), it's likely a continuous seam. If they both open the same direction, it's a cut seam.
+
+## Tips for measuring your binder
+
+The pocket dimensions in Michify refer to the **practical inside area** where a card sits snugly (card size + small tolerance). For a standard TCG binder holding 63×88mm cards, this is typically around 68×93mm.
+
+For seams, measure the visible gap between two adjacent pocket openings when cards are inserted. Most modern binders have 2-4mm seams.
+
+## Development
+
+Michify is a single-page web app built with vanilla HTML, CSS, and JavaScript. No frameworks, no build step, no dependencies.
+
+tcg-binder-designer/
+├── index.html HTML structure
+├── style.css Styling and layout
+├── app.js Application logic
+├── README.md This file
+└── LICENSE MIT license
+
+
+To run locally, just open `index.html` in a browser. For development with hot reload, use VSCode's Live Server extension or any local static server.
+
+Contributions are welcome. If you find a bug or want to suggest a feature, open an [issue on GitHub](https://github.com/granothon/tcg-binder-designer/issues).
+
+## Support the project
+
+Michify is free and open source, and always will be. If it saved you time or helped you build something cool, consider buying me a coffee.
+
+[☕ Buy me a coffee](https://ko-fi.com/granothon)
+
+Every contribution helps keep this tool maintained and improved.
+
+## About the Michi Method
+
+The Michi Method is a community technique for creating custom binder art by printing images at exact card dimensions and inserting them into binder pockets, often spanning multiple pockets to create larger artworks. The name comes from the community that popularized the technique.
+
+Michify is an independent tool that supports designing for this method, but is not officially affiliated with any Michi Method creators or communities. It's just a tool to make the process easier.
+
+## License
+
+MIT License. See [LICENSE](LICENSE) file for details.
+
+Copyright © 2026 Risto Ruuskanen
+
+## Author
+
+Created and maintained by Risto Ruuskanen.
+
+- GitHub: [@granothon](https://github.com/granothon)
+- Ko-fi: [ko-fi.com/granothon](https://ko-fi.com/granothon)
