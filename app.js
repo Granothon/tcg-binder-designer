@@ -91,10 +91,6 @@ function pocketPos(row, col) {
   };
 }
 
-// ============================================================
-// IMAGE CLAMPING
-// Prevents image from creating empty space in slot
-// ============================================================
 function clampImage(imgData) {
   const sw = imgData.slotW || 1;
   const sh = imgData.slotH || 1;
@@ -158,8 +154,7 @@ function updateClipboardIndicator() {
 }
 
 // ============================================================
-// RENDER PER-POCKET IMAGE PARTS (Michi Method)
-// Each pocket shows its own piece of the image
+// RENDER - PER-POCKET IMAGE PARTS (Michi Method)
 // ============================================================
 function renderPocketImagePart(pocketEl, imgData, slotOriginRow, slotOriginCol, pocketRow, pocketCol) {
   const p = currentPage();
@@ -182,10 +177,6 @@ function renderPocketImagePart(pocketEl, imgData, slotOriginRow, slotOriginCol, 
   pocketEl.appendChild(imgEl);
 }
 
-// ============================================================
-// RENDER CONTINUOUS SEAM BRIDGE
-// Image continues seamlessly across continuous seams
-// ============================================================
 function renderContinuousSeamBridge(canvas, imgData, slotOriginRow, slotOriginCol, seamRow, seamCol, direction) {
   const p = currentPage();
   const scale = state.viewScale;
@@ -245,9 +236,6 @@ function renderContinuousSeamBridge(canvas, imgData, slotOriginRow, slotOriginCo
   canvas.appendChild(bridge);
 }
 
-// ============================================================
-// MAIN RENDER
-// ============================================================
 function renderBinder() {
   const p = currentPage();
   const canvas = document.getElementById('binder-canvas');
@@ -258,7 +246,6 @@ function renderBinder() {
   canvas.style.width = totalW + 'px';
   canvas.style.height = totalH + 'px';
 
-  // Render pockets with their image parts
   for (let row = 0; row < p.rows; row++) {
     for (let col = 0; col < p.cols; col++) {
       const pos = pocketPos(row, col);
@@ -336,7 +323,6 @@ function renderBinder() {
     }
   }
 
-  // Render continuous seam bridges
   for (const key in p.images) {
     const [srow, scol] = key.split(',').map(Number);
     const img = p.images[key];
@@ -358,7 +344,6 @@ function renderBinder() {
     }
   }
 
-  // Render cut seam masks (shows lost area)
   for (const key in p.images) {
     const [srow, scol] = key.split(',').map(Number);
     const img = p.images[key];
@@ -396,7 +381,6 @@ function renderBinder() {
     }
   }
 
-  // Selected slot outline
   if (state.selectedSlot) {
     const { row, col } = state.selectedSlot;
     const key = row + ',' + col;
@@ -415,7 +399,6 @@ function renderBinder() {
     }
   }
 
-  // Seam toggle buttons
   for (let row = 0; row < p.rows; row++) {
     for (let s = 0; s < p.cols - 1; s++) {
       const pos = pocketPos(row, s);
@@ -639,9 +622,6 @@ function removeImage() {
   setStatus('Image removed');
 }
 
-// ============================================================
-// CLONE (COPY/PASTE)
-// ============================================================
 function copyImageSettings() {
   if (!state.selectedSlot) return;
   const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
@@ -732,9 +712,6 @@ function duplicateToNeighbor(dir) {
   setStatus('Duplicated ' + dir);
 }
 
-// ============================================================
-// IMAGE DROP
-// ============================================================
 function handleDrop(e, row, col) {
   const files = e.dataTransfer.files;
   if (files.length === 0) return;
@@ -982,6 +959,194 @@ function newProject() {
 }
 
 // ============================================================
+// PRINT LOGIC - NEW: BIN PACKING WITH SEAM GAPS
+// ============================================================
+
+// Collect all printable pieces from all pages
+// Each piece is a contiguous rectangle of pockets bounded by cut seams
+function collectPrintPieces() {
+  const pieces = [];
+  state.pages.forEach((page, pageIdx) => {
+    for (const key in page.images) {
+      const [srow, scol] = key.split(',').map(Number);
+      const img = page.images[key];
+      const sw = img.slotW || 1;
+      const sh = img.slotH || 1;
+
+      // Find contiguous sub-rectangles bounded by cut seams
+      // Split by cut seams in horizontal direction
+      const colGroups = [];
+      let currentGroup = [scol];
+      for (let c = scol; c < scol + sw - 1; c++) {
+        if (page.seamsH[c] === 'cut') {
+          colGroups.push(currentGroup);
+          currentGroup = [c + 1];
+        } else {
+          currentGroup.push(c + 1);
+        }
+      }
+      colGroups.push(currentGroup);
+
+      // Split by cut seams in vertical direction
+      const rowGroups = [];
+      let currentRowGroup = [srow];
+      for (let r = srow; r < srow + sh - 1; r++) {
+        if (page.seamsV[r] === 'cut') {
+          rowGroups.push(currentRowGroup);
+          currentRowGroup = [r + 1];
+        } else {
+          currentRowGroup.push(r + 1);
+        }
+      }
+      rowGroups.push(currentRowGroup);
+
+            // For each sub-rectangle, compute physical size and offset within the original image
+      rowGroups.forEach(rowGroup => {
+        colGroups.forEach(colGroup => {
+          const firstCol = colGroup[0];
+          const lastCol = colGroup[colGroup.length - 1];
+          const firstRow = rowGroup[0];
+          const lastRow = rowGroup[rowGroup.length - 1];
+          const pieceW_pockets = lastCol - firstCol + 1;
+          const pieceH_pockets = lastRow - firstRow + 1;
+
+          // Physical size of this piece (including internal continuous seams)
+          const pieceW_mm = pieceW_pockets * page.pocketW + (pieceW_pockets - 1) * page.seamH;
+          const pieceH_mm = pieceH_pockets * page.pocketH + (pieceH_pockets - 1) * page.seamV;
+
+          // Offset of this piece within the original slot (mm)
+          let offsetX_mm = 0;
+          let offsetY_mm = 0;
+          for (let c = scol; c < firstCol; c++) {
+            offsetX_mm += page.pocketW + page.seamH;
+          }
+          for (let r = srow; r < firstRow; r++) {
+            offsetY_mm += page.pocketH + page.seamV;
+          }
+
+          pieces.push({
+            pageIdx: pageIdx,
+            slotKey: key,
+            image: img,
+            widthMm: pieceW_mm,
+            heightMm: pieceH_mm,
+            offsetX_mm: offsetX_mm,
+            offsetY_mm: offsetY_mm,
+            seamH: page.seamH,
+            seamV: page.seamV,
+            label: 'P' + (pageIdx + 1) + ' R' + (firstRow + 1) + 'C' + (firstCol + 1)
+          });
+        });
+      });
+    }
+  });
+  return pieces;
+}
+
+// Bin packing: Shelf algorithm with First Fit Decreasing Height
+// Places each piece with a gap (seam margin) around it for cutting
+function packPieces(pieces, paperW, paperH, gapMm) {
+  // Try each piece in both orientations, choose based on total sheets needed
+  const sheets = [];
+
+  // Sort pieces by height descending (shelf packing works best this way)
+  const sortedPieces = pieces.slice().sort((a, b) => b.heightMm - a.heightMm);
+
+  for (const piece of sortedPieces) {
+    // Try to place in existing sheets first
+    let placed = false;
+
+    // Try both orientations
+    const orientations = [
+      { w: piece.widthMm, h: piece.heightMm, rotated: false },
+      { w: piece.heightMm, h: piece.widthMm, rotated: true }
+    ];
+
+    for (const sheet of sheets) {
+      for (const orient of orientations) {
+        if (tryPlaceOnSheet(sheet, piece, orient, paperW, paperH, gapMm)) {
+          placed = true;
+          break;
+        }
+      }
+      if (placed) break;
+    }
+
+    if (!placed) {
+      // Create new sheet
+      const newSheet = { shelves: [], placements: [] };
+      for (const orient of orientations) {
+        if (tryPlaceOnSheet(newSheet, piece, orient, paperW, paperH, gapMm)) {
+          placed = true;
+          break;
+        }
+      }
+      if (placed) {
+        sheets.push(newSheet);
+      } else {
+        // Piece too large even for empty sheet
+        return { sheets, tooLarge: piece };
+      }
+    }
+  }
+  return { sheets, tooLarge: null };
+}
+
+function tryPlaceOnSheet(sheet, piece, orient, paperW, paperH, gapMm) {
+  const w = orient.w;
+  const h = orient.h;
+
+  // Piece must fit within paper (accounting for gap on all sides for cutting)
+  if (w > paperW || h > paperH) return false;
+
+  // Try to fit in existing shelves
+  for (const shelf of sheet.shelves) {
+    // Shelf height must accommodate this piece
+    if (h > shelf.height) continue;
+
+    // Calculate horizontal position: after last placement + gap
+    let nextX = shelf.usedWidth;
+    if (shelf.usedWidth > 0) nextX += gapMm;
+
+    if (nextX + w <= paperW) {
+      // Fits in this shelf
+      sheet.placements.push({
+        piece: piece,
+        orient: orient,
+        x: nextX,
+        y: shelf.y,
+        w: w,
+        h: h
+      });
+      shelf.usedWidth = nextX + w;
+      return true;
+    }
+  }
+
+  // Create new shelf
+  let nextY = 0;
+  if (sheet.shelves.length > 0) {
+    const lastShelf = sheet.shelves[sheet.shelves.length - 1];
+    nextY = lastShelf.y + lastShelf.height + gapMm;
+  }
+
+  if (nextY + h <= paperH) {
+    sheet.shelves.push({ y: nextY, height: h, usedWidth: w });
+    sheet.placements.push({
+      piece: piece,
+      orient: orient,
+      x: 0,
+      y: nextY,
+      w: w,
+      h: h
+    });
+    return true;
+  }
+
+  return false;
+}
+
+// ============================================================
 // PRINT DIALOG
 // ============================================================
 function openPrintDialog() {
@@ -1007,27 +1172,70 @@ function getPaperDimensions() {
 function updatePrintFit() {
   const paper = getPaperDimensions();
   const resultEl = document.getElementById('print-fit-result');
-  const results = [];
-  let allFit = true;
-  state.pages.forEach((page, i) => {
-    const totalW = page.cols * page.pocketW + (page.cols - 1) * page.seamH;
-    const totalH = page.rows * page.pocketH + (page.rows - 1) * page.seamV;
-    const fits = totalW <= paper.usableW && totalH <= paper.usableH;
-    if (!fits) allFit = false;
-    results.push('Page ' + (i + 1) + ': ' + totalW.toFixed(1) + '×' + totalH.toFixed(1) + ' mm ' + (fits ? '✓' : '✗ does not fit'));
-  });
-  const msg = results.join('<br>');
-  if (allFit) {
-    resultEl.className = 'fit-result fit-ok';
-    resultEl.innerHTML = '<b>All pages fit ' + paper.size + ' ' + paper.orient + ' (' + paper.usableW + '×' + paper.usableH + ' mm usable):</b><br>' + msg;
-  } else {
+  const confirmBtn = document.getElementById('print-confirm');
+
+  // Collect all printable pieces
+  const pieces = collectPrintPieces();
+
+  if (pieces.length === 0) {
     resultEl.className = 'fit-result fit-bad';
-    resultEl.innerHTML = '<b>Some pages do not fit ' + paper.size + ' ' + paper.orient + ':</b><br>' + msg + '<br><br>Try landscape, larger paper size, or smaller margins.';
+    resultEl.innerHTML = '<b>Nothing to print</b><br>Add images to at least one page before printing.';
+    confirmBtn.disabled = true;
+    return;
   }
+
+  // Get largest seam value for gap between printed pieces
+  // Use the largest seam value from all pages (safest for cutting)
+  let maxSeam = 0;
+  state.pages.forEach(page => {
+    maxSeam = Math.max(maxSeam, page.seamH, page.seamV);
+  });
+  const gapMm = maxSeam;
+
+  // Pack pieces
+  const result = packPieces(pieces, paper.usableW, paper.usableH, gapMm);
+
+  if (result.tooLarge) {
+    const p = result.tooLarge;
+    resultEl.className = 'fit-result fit-bad';
+    resultEl.innerHTML = '<b>Image too large for ' + paper.size + ' ' + paper.orient + '</b><br>' +
+      p.label + ' is ' + p.widthMm.toFixed(1) + '×' + p.heightMm.toFixed(1) + ' mm which exceeds usable area (' +
+      paper.usableW + '×' + paper.usableH + ' mm).<br><br>Try A3, landscape, or smaller margins.';
+    confirmBtn.disabled = true;
+    return;
+  }
+
+  const sheetCount = result.sheets.length;
+  const pieceCount = pieces.length;
+  const rotatedCount = result.sheets.reduce((sum, sheet) =>
+    sum + sheet.placements.filter(p => p.orient.rotated).length, 0);
+
+  resultEl.className = 'fit-result fit-ok';
+  let msg = '<b>Ready to print:</b><br>';
+  msg += pieceCount + ' image piece' + (pieceCount !== 1 ? 's' : '') + ' fit on ' + sheetCount + ' ' + paper.size + ' ' + paper.orient + ' sheet' + (sheetCount !== 1 ? 's' : '');
+  if (rotatedCount > 0) {
+    msg += '<br><span style="color:#FFB000">' + rotatedCount + ' piece' + (rotatedCount !== 1 ? 's' : '') + ' auto-rotated to fit</span>';
+  }
+  msg += '<br><span style="font-size:11px;color:#888">Gap between pieces: ' + gapMm + ' mm (matches largest seam for cutting)</span>';
+  resultEl.innerHTML = msg;
+  confirmBtn.disabled = false;
+
+  // Store result for confirmPrint
+  window._printResult = result;
+  window._printPaper = paper;
+  window._printGap = gapMm;
 }
 
 function confirmPrint() {
-  const paper = getPaperDimensions();
+  const paper = window._printPaper;
+  const result = window._printResult;
+  const gapMm = window._printGap;
+
+  if (!paper || !result) {
+    updatePrintFit();
+    return;
+  }
+
   const styleEl = document.createElement('style');
   styleEl.id = 'dynamic-print-style';
   styleEl.textContent = '@page { size: ' + paper.size + ' ' + paper.orient + '; margin: ' + paper.margin + 'mm; }';
@@ -1035,144 +1243,33 @@ function confirmPrint() {
   if (oldStyle) oldStyle.remove();
   document.head.appendChild(styleEl);
   closePrintDialog();
-  preparePrint();
+  preparePrint(result, paper, gapMm);
 }
 
-function preparePrint() {
+// ============================================================
+// PRINT RENDERING - New bin-packed layout
+// ============================================================
+function preparePrint(packResult, paper, gapMm) {
   const canvasArea = document.getElementById('canvas-area');
   const MM_TO_PX = 96 / 25.4;
   canvasArea.innerHTML = '';
-  state.pages.forEach((page) => {
-    const pageDiv = document.createElement('div');
-    pageDiv.className = 'print-page';
-    const totalW = page.cols * page.pocketW + (page.cols - 1) * page.seamH;
-    const totalH = page.rows * page.pocketH + (page.rows - 1) * page.seamV;
-    pageDiv.style.width = (totalW * MM_TO_PX) + 'px';
-    pageDiv.style.height = (totalH * MM_TO_PX) + 'px';
-    pageDiv.style.background = 'white';
-    pageDiv.style.position = 'relative';
 
-    // Render each pocket with its own image piece (Michi Method)
-    for (let row = 0; row < page.rows; row++) {
-      for (let col = 0; col < page.cols; col++) {
-        const slot = (function () {
-          for (const key in page.images) {
-            const img = page.images[key];
-            const [r, c] = key.split(',').map(Number);
-            const w = img.slotW || 1;
-            const h = img.slotH || 1;
-            if (row >= r && row < r + h && col >= c && col < c + w) {
-              return { key, row: r, col: c, image: img };
-            }
-          }
-          return null;
-        })();
-        if (!slot) continue;
-        const img = slot.image;
-        const x = col * (page.pocketW + page.seamH) * MM_TO_PX;
-        const y = row * (page.pocketH + page.seamV) * MM_TO_PX;
-        const w = page.pocketW * MM_TO_PX;
-        const h = page.pocketH * MM_TO_PX;
-        const pocketDiv = document.createElement('div');
-        pocketDiv.style.position = 'absolute';
-        pocketDiv.style.left = x + 'px';
-        pocketDiv.style.top = y + 'px';
-        pocketDiv.style.width = w + 'px';
-        pocketDiv.style.height = h + 'px';
-        pocketDiv.style.overflow = 'hidden';
-        let offsetX_mm = 0;
-        let offsetY_mm = 0;
-        for (let c = slot.col; c < col; c++) offsetX_mm += page.pocketW + page.seamH;
-        for (let r = slot.row; r < row; r++) offsetY_mm += page.pocketH + page.seamV;
-        const imgEl = document.createElement('img');
-        imgEl.src = img.src;
-        imgEl.style.position = 'absolute';
-        imgEl.style.width = (img.widthMm * MM_TO_PX) + 'px';
-        imgEl.style.height = 'auto';
-        imgEl.style.left = ((img.xMm - offsetX_mm) * MM_TO_PX) + 'px';
-        imgEl.style.top = ((img.yMm - offsetY_mm) * MM_TO_PX) + 'px';
-        imgEl.style.transform = 'rotate(' + img.rotate + 'deg)';
-        imgEl.style.transformOrigin = 'top left';
-        pocketDiv.appendChild(imgEl);
-        pageDiv.appendChild(pocketDiv);
-      }
-    }
+  packResult.sheets.forEach((sheet, sheetIdx) => {
+    const sheetDiv = document.createElement('div');
+    sheetDiv.className = 'print-page';
+    sheetDiv.style.width = (paper.usableW * MM_TO_PX) + 'px';
+    sheetDiv.style.height = (paper.usableH * MM_TO_PX) + 'px';
+    sheetDiv.style.background = 'white';
+    sheetDiv.style.position = 'relative';
+    sheetDiv.style.margin = '0 auto';
 
-    // Render continuous seam bridges (image continues across seam)
-    for (const key in page.images) {
-      const [srow, scol] = key.split(',').map(Number);
-      const img = page.images[key];
-      const sw = img.slotW || 1;
-      const sh = img.slotH || 1;
-      for (let c = scol; c < scol + sw - 1; c++) {
-        if (page.seamsH[c] === 'continuous') {
-          for (let r = srow; r < srow + sh; r++) {
-            const seamX = ((c + 1) * page.pocketW + c * page.seamH) * MM_TO_PX;
-            const seamY = r * (page.pocketH + page.seamV) * MM_TO_PX;
-            const bridge = document.createElement('div');
-            bridge.style.position = 'absolute';
-            bridge.style.left = seamX + 'px';
-            bridge.style.top = seamY + 'px';
-            bridge.style.width = (page.seamH * MM_TO_PX) + 'px';
-            bridge.style.height = (page.pocketH * MM_TO_PX) + 'px';
-            bridge.style.overflow = 'hidden';
-            let offX = 0;
-            for (let cc = scol; cc <= c; cc++) {
-              offX += page.pocketW;
-              if (cc < c) offX += page.seamH;
-            }
-            let offY = 0;
-            for (let rr = srow; rr < r; rr++) offY += page.pocketH + page.seamV;
-            const imgEl = document.createElement('img');
-            imgEl.src = img.src;
-            imgEl.style.position = 'absolute';
-            imgEl.style.width = (img.widthMm * MM_TO_PX) + 'px';
-            imgEl.style.height = 'auto';
-            imgEl.style.left = ((img.xMm - offX) * MM_TO_PX) + 'px';
-            imgEl.style.top = ((img.yMm - offY) * MM_TO_PX) + 'px';
-            imgEl.style.transform = 'rotate(' + img.rotate + 'deg)';
-            imgEl.style.transformOrigin = 'top left';
-            bridge.appendChild(imgEl);
-            pageDiv.appendChild(bridge);
-          }
-        }
-      }
-      for (let r = srow; r < srow + sh - 1; r++) {
-        if (page.seamsV[r] === 'continuous') {
-          for (let c = scol; c < scol + sw; c++) {
-            const seamX = c * (page.pocketW + page.seamH) * MM_TO_PX;
-            const seamY = ((r + 1) * page.pocketH + r * page.seamV) * MM_TO_PX;
-            const bridge = document.createElement('div');
-            bridge.style.position = 'absolute';
-            bridge.style.left = seamX + 'px';
-            bridge.style.top = seamY + 'px';
-            bridge.style.width = (page.pocketW * MM_TO_PX) + 'px';
-            bridge.style.height = (page.seamV * MM_TO_PX) + 'px';
-            bridge.style.overflow = 'hidden';
-            let offX = 0;
-            for (let cc = scol; cc < c; cc++) offX += page.pocketW + page.seamH;
-            let offY = 0;
-            for (let rr = srow; rr <= r; rr++) {
-              offY += page.pocketH;
-              if (rr < r) offY += page.seamV;
-            }
-            const imgEl = document.createElement('img');
-            imgEl.src = img.src;
-            imgEl.style.position = 'absolute';
-            imgEl.style.width = (img.widthMm * MM_TO_PX) + 'px';
-            imgEl.style.height = 'auto';
-            imgEl.style.left = ((img.xMm - offX) * MM_TO_PX) + 'px';
-            imgEl.style.top = ((img.yMm - offY) * MM_TO_PX) + 'px';
-            imgEl.style.transform = 'rotate(' + img.rotate + 'deg)';
-            imgEl.style.transformOrigin = 'top left';
-            bridge.appendChild(imgEl);
-            pageDiv.appendChild(bridge);
-          }
-        }
-      }
-    }
-    canvasArea.appendChild(pageDiv);
+    sheet.placements.forEach(placement => {
+      renderPrintPiece(sheetDiv, placement, MM_TO_PX);
+    });
+
+    canvasArea.appendChild(sheetDiv);
   });
+
   setTimeout(() => {
     window.print();
     setTimeout(() => {
@@ -1182,6 +1279,56 @@ function preparePrint() {
       renderBinder();
     }, 500);
   }, 100);
+}
+
+function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
+  const piece = placement.piece;
+  const orient = placement.orient;
+  const img = piece.image;
+
+  // Create piece container at (placement.x, placement.y) with (orient.w, orient.h)
+  const pieceDiv = document.createElement('div');
+  pieceDiv.style.position = 'absolute';
+  pieceDiv.style.left = (placement.x * MM_TO_PX) + 'px';
+  pieceDiv.style.top = (placement.y * MM_TO_PX) + 'px';
+  pieceDiv.style.width = (orient.w * MM_TO_PX) + 'px';
+  pieceDiv.style.height = (orient.h * MM_TO_PX) + 'px';
+  pieceDiv.style.overflow = 'hidden';
+
+  // The image needs to be positioned so that the correct portion shows within the piece
+  // The piece corresponds to a sub-rectangle of the original slot, at offset (piece.offsetX_mm, piece.offsetY_mm)
+  // The image inside the original slot is at (img.xMm, img.yMm) with width img.widthMm
+
+  // For non-rotated placement:
+  // In original coordinates: image position within piece = (img.xMm - piece.offsetX_mm, img.yMm - piece.offsetY_mm)
+  const imgEl = document.createElement('img');
+  imgEl.src = img.src;
+  imgEl.style.position = 'absolute';
+  imgEl.style.width = (img.widthMm * MM_TO_PX) + 'px';
+  imgEl.style.height = 'auto';
+
+  if (!orient.rotated) {
+    imgEl.style.left = ((img.xMm - piece.offsetX_mm) * MM_TO_PX) + 'px';
+    imgEl.style.top = ((img.yMm - piece.offsetY_mm) * MM_TO_PX) + 'px';
+    imgEl.style.transform = 'rotate(' + img.rotate + 'deg)';
+    imgEl.style.transformOrigin = 'top left';
+  } else {
+    // Rotated 90° for bin packing
+    // The piece is placed with swapped dimensions
+    // We rotate the whole content 90° clockwise
+    imgEl.style.left = '0px';
+    imgEl.style.top = '0px';
+    imgEl.style.transform = 'rotate(90deg) translateY(-100%) translate(' +
+      ((img.xMm - piece.offsetX_mm) * MM_TO_PX) + 'px, ' +
+      ((img.yMm - piece.offsetY_mm) * MM_TO_PX) + 'px)';
+    imgEl.style.transformOrigin = 'top left';
+  }
+  pieceDiv.appendChild(imgEl);
+
+  // Add small label to help user identify pieces (visible only on screen preview, hidden on print)
+  // Skipping for now to keep print clean
+
+  sheetDiv.appendChild(pieceDiv);
 }
 
 // ============================================================
@@ -1219,8 +1366,6 @@ function updatePhysicalInfo() {
 // ============================================================
 // EVENT HANDLERS
 // ============================================================
-
-// Mouse wheel zoom on selected image
 document.addEventListener('wheel', (e) => {
   if (!state.selectedSlot) return;
   const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
@@ -1239,7 +1384,6 @@ document.addEventListener('wheel', (e) => {
   zoomImage(delta);
 }, { passive: false });
 
-// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (!state.selectedSlot) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -1274,7 +1418,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Mouse drag to pan selected image
 document.addEventListener('mousedown', (e) => {
   const pocket = e.target.closest('.pocket');
   if (!pocket) return;
@@ -1332,11 +1475,9 @@ document.addEventListener('mouseup', (e) => {
   }
 });
 
-// Prevent default drag behavior on body
 document.body.addEventListener('dragover', (e) => e.preventDefault());
 document.body.addEventListener('drop', (e) => e.preventDefault());
 
-// Close modals by clicking backdrop
 document.getElementById('print-modal').addEventListener('click', (e) => {
   if (e.target.id === 'print-modal') closePrintDialog();
 });

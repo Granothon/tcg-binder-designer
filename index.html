@@ -14,6 +14,41 @@
 <meta name="description" content="Free open-source tool for designing TCG binder art with millimeter-perfect print output. Plan Michi Method spreads and custom binder layouts.">
 <title>Michify - TCG Binder Designer</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  /* Modal link contrast fix */
+  .modal a {
+    color: #FFB000;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+  .modal a:hover {
+    color: #ffc333;
+    text-decoration: none;
+  }
+  .modal a.accent,
+  .modal a.secondary {
+    text-decoration: none;
+  }
+  .modal a.accent {
+    color: #1a1a1a;
+  }
+  .modal a.secondary {
+    color: #eaeaea;
+  }
+  .modal .attribution {
+    font-size: 12px;
+    color: #999;
+    padding: 10px;
+    background: #1e1e1e;
+    border-left: 3px solid #FFB000;
+    border-radius: 3px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .modal .attribution a {
+    color: #FFB000;
+  }
+</style>
 </head>
 <body>
 
@@ -164,21 +199,27 @@
       <b>License:</b> MIT (free and open source)<br>
       <b>Author:</b> Risto Ruuskanen
     </p>
+    <div class="attribution">
+      The Michi Method was popularized by 
+      <a href="https://instagram.com/peeplop" target="_blank" rel="noopener">@peeplop</a> 
+      on Instagram. Michify is an independent tool that supports designing for this method 
+      but is not officially affiliated with any Michi Method creators or communities.
+    </div>
     <p style="margin-bottom:12px">
       This tool is free to use. If it saved you time, consider buying me a coffee
       to help maintain and improve it.
     </p>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" 
-         class="accent" style="text-decoration:none;padding:8px 14px;display:inline-block">
+         class="accent" style="text-decoration:none;padding:8px 14px;display:inline-block;background:#FFB000;color:#1a1a1a;border-radius:4px;font-weight:600;font-size:12px">
         ☕ Buy me a coffee
       </a>
       <a href="https://github.com/granothon/tcg-binder-designer" target="_blank" rel="noopener"
-         class="secondary" style="text-decoration:none;padding:8px 14px;display:inline-block">
+         class="secondary" style="text-decoration:none;padding:8px 14px;display:inline-block;background:#333;color:#eaeaea;border:1px solid #444;border-radius:4px;font-size:12px">
         View source on GitHub
       </a>
       <a href="https://github.com/granothon/tcg-binder-designer/issues" target="_blank" rel="noopener"
-         class="secondary" style="text-decoration:none;padding:8px 14px;display:inline-block">
+         class="secondary" style="text-decoration:none;padding:8px 14px;display:inline-block;background:#333;color:#eaeaea;border:1px solid #444;border-radius:4px;font-size:12px">
         Report issue / request feature
       </a>
     </div>

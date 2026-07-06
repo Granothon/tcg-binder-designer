@@ -584,3 +584,27 @@ input[type="file"] {
     margin: 5mm;
   }
 }
+
+/* ============================================================
+   MODAL LINKS - fix contrast issue
+   ============================================================ */
+.modal a {
+  color: #FFB000;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.modal a:hover {
+  color: #ffc333;
+  text-decoration: none;
+}
+
+.modal a.accent,
+.modal a.secondary {
+  text-decoration: none;
+  color: inherit;
+}
+
+.modal a.accent {
+  color: #1a1a1a;
+}

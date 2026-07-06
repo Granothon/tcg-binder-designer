@@ -76,9 +76,14 @@ Every contribution helps keep this tool maintained and improved.
 
 ## About the Michi Method
 
-The Michi Method is a community technique for creating custom binder art by printing images at exact card dimensions and inserting them into binder pockets, often spanning multiple pockets to create larger artworks. The name comes from the community that popularized the technique.
+The Michi Method is a binder art technique popularized by [@peeplop](https://instagram.com/peeplop) on Instagram. Instead of filling every pocket uniformly, it uses layouts that mix single cards, multi-slot visual panels, and intentional negative space, treating the whole page as a canvas.
 
-Michify is an independent tool that supports designing for this method, but is not officially affiliated with any Michi Method creators or communities. It's just a tool to make the process easier.
+Michify is an independent tool that supports designing for this method with precise measurements, but is not officially affiliated with any Michi Method creators or communities. It's built to make the design process easier and more accurate.
+
+Community resources:
+- [@peeplop on Instagram](https://instagram.com/peeplop) - original creator
+- [Michi Method community Discord](https://discord.gg/) (link via @peeplop's Instagram)
+- [Full Michi Method guide by woahpoke](https://woahpoke.com/) - excellent introduction
 
 ## License
 
