@@ -20,9 +20,9 @@ Unlike collection management apps that focus on tracking cards, Michify is a **p
 - **Clone and duplicate**: Copy image crops between slots, extend images seamlessly to neighboring slots
 - **Multi-page projects**: Design a whole binder in one session, save as JSON for later editing
 - **Size Guide reference**: See all possible slot dimensions calculated from your binder measurements
+- **Rounded corners**: Optional preview and print output with rounded corners in two styles (outer edges only or every card). Works as visual cutting guides even on non-white paper.
 - **Locked panning**: Images can't create empty white space, only zoom and crop within the slot
 - **Smart bin-packing printing**: Automatically arranges pieces on A4/A3 sheets with proper cutting margins
-- **Automatic corner rounding**: Prints with rounded corners (no corner cutter needed) for professional-looking inserts
 - **A4 and A3 printing**: Portrait or landscape orientation with automatic fit checking
 
 ## How to use
@@ -32,11 +32,12 @@ Unlike collection management apps that focus on tracking cards, Michify is a **p
 3. Enter the measurements in the sidebar (pocket width, height, seam sizes)
 4. Set the layout (rows × columns)
 5. Configure seams by clicking them (red = cut, teal = continuous)
-6. Click or drag over pockets to select an area
-7. Drop an image onto the selected area
-8. Adjust the crop with your mouse (drag to pan, wheel to zoom) or arrow keys
-9. Optionally check the Size Guide to see all possible slot dimensions
-10. Click "Print / PDF" to export at the exact size for your binder
+6. Choose a corner style (no rounding by default, or rounded corners with adjustable radius)
+7. Click or drag over pockets to select an area
+8. Drop an image onto the selected area
+9. Adjust the crop with your mouse (drag to pan, wheel to zoom) or arrow keys
+10. Optionally check the Size Guide to see all possible slot dimensions
+11. Click "Print / PDF" to export at the exact size for your binder
 
 ## Understanding seams
 
@@ -47,6 +48,21 @@ Binders come in different styles, and the seams between pockets behave different
 **Continuous seams** exist in side-loading binders where two pockets face each other with their openings pointing toward the same seam. In these binders, an image can slide behind the seam material into both pockets, creating a seamless visual across the gap.
 
 Not sure what your binder has? Look at a pair of adjacent pockets and check which direction each one opens. If they open toward each other (openings pointing at the seam), it's likely a continuous seam. If they both open the same direction, it's a cut seam.
+
+## Understanding corner styles
+
+Michify offers three corner styles to match your aesthetic preference and available tools:
+
+**No rounding** (default): Straight corners on all images. Choose this if you're using scissors or don't have specific tools for corner cutting. Also good if you prefer the crisp look of sharp corners.
+
+**Round outer edges**: The outer corners of each image piece are rounded. Multi-pocket spanning artwork (with continuous seams) is treated as one unified piece with only the outermost corners rounded. This creates a look where the whole spread appears as one large card.
+
+**Round every card**: Each individual pocket gets its own set of rounded corners. Multi-pocket spanning artwork shows rounded corners at every pocket boundary, making the layout look like separate cards placed next to each other.
+
+The rounded corner effect works two ways during printing:
+
+- **On white paper**: The rounded corners blend perfectly with the paper, giving the visual appearance of pre-cut rounded cards
+- **On any paper color**: The rounded areas serve as cutting guides. Cut straight along the edges and the "corners" define where your card's rounded shape ends. No corner cutter tool needed either way.
 
 ## Tips for measuring your binder
 
@@ -60,7 +76,7 @@ Michify handles the complex parts of printing automatically:
 
 - **Bin packing**: Multiple images are arranged efficiently on each A4 or A3 sheet, rotating pieces when needed to save paper
 - **Cutting margins**: The gap between printed pieces matches your binder's seam width, so you can cut straight lines with a paper cutter
-- **Rounded corners**: Enable "Round corners for cutting" in the print dialog to add professional-looking rounded corners automatically. No corner cutter tool needed.
+- **Corner rounding**: Enable rounded corners in the sidebar to add professional-looking rounded corners automatically. Works as both visual style and cutting guide.
 - **Physical accuracy**: All measurements are in real millimeters. Print at 100% scale (not "fit to page") for pixel-perfect results.
 
 For best results, use matte cardstock (around 300gsm) rather than regular printer paper. It feels closer to real cards in the binder pocket.

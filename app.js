@@ -14,7 +14,9 @@ let state = {
   selectedSlot: null,
   rangeSelection: null,
   viewScale: 3,
-  clipboard: null
+  clipboard: null,
+  cornerMode: 'none',       // 'none' | 'outer' | 'every'
+  cornerRadius: 3           // mm
 };
 
 let rangeSelecting = null;
@@ -121,6 +123,141 @@ function clampImage(imgData) {
 }
 
 // ============================================================
+// CORNER LOGIC
+// ============================================================
+function updateCorners() {
+  state.cornerMode = document.getElementById('corner-mode').value;
+  state.cornerRadius = parseFloat(document.getElementById('corner-radius').value) || 3;
+  
+  // Show/hide radius field based on mode
+  const radiusField = document.getElementById('corner-radius-field');
+  if (state.cornerMode === 'none') {
+    radiusField.classList.add('hidden');
+  } else {
+    radiusField.classList.remove('hidden');
+  }
+  
+  renderBinder();
+}
+
+// Collect image "pieces" - contiguous rectangles bounded by cut seams
+// This is used for corner rounding in 'outer' mode
+function collectImagePieces(pageParam) {
+  const page = pageParam || currentPage();
+  const pieces = [];
+  
+  for (const key in page.images) {
+    const [srow, scol] = key.split(',').map(Number);
+    const img = page.images[key];
+    const sw = img.slotW || 1;
+    const sh = img.slotH || 1;
+
+    // Split by cut seams horizontally
+    const colGroups = [];
+    let currentGroup = [scol];
+    for (let c = scol; c < scol + sw - 1; c++) {
+      if (page.seamsH[c] === 'cut') {
+        colGroups.push(currentGroup);
+        currentGroup = [c + 1];
+      } else {
+        currentGroup.push(c + 1);
+      }
+    }
+    colGroups.push(currentGroup);
+
+    // Split by cut seams vertically
+    const rowGroups = [];
+    let currentRowGroup = [srow];
+    for (let r = srow; r < srow + sh - 1; r++) {
+      if (page.seamsV[r] === 'cut') {
+        rowGroups.push(currentRowGroup);
+        currentRowGroup = [r + 1];
+      } else {
+        currentRowGroup.push(r + 1);
+      }
+    }
+    rowGroups.push(currentRowGroup);
+
+    rowGroups.forEach(rowGroup => {
+      colGroups.forEach(colGroup => {
+        const firstCol = colGroup[0];
+        const lastCol = colGroup[colGroup.length - 1];
+        const firstRow = rowGroup[0];
+        const lastRow = rowGroup[rowGroup.length - 1];
+        
+        pieces.push({
+          slotKey: key,
+          slotOriginRow: srow,
+          slotOriginCol: scol,
+          firstRow, lastRow,
+          firstCol, lastCol,
+          image: img
+        });
+      });
+    });
+  }
+  return pieces;
+}
+
+// Render corner overlays for pieces (outer mode) or pockets (every mode)
+function renderCornerOverlays(canvas) {
+  if (state.cornerMode === 'none') return;
+  
+  const page = currentPage();
+  const radiusMm = state.cornerRadius;
+  const radiusPx = mmToPx(radiusMm);
+  
+  if (state.cornerMode === 'every') {
+    // Round every pocket that has an image
+    for (const key in page.images) {
+      const [srow, scol] = key.split(',').map(Number);
+      const img = page.images[key];
+      const sw = img.slotW || 1;
+      const sh = img.slotH || 1;
+      
+      for (let r = srow; r < srow + sh; r++) {
+        for (let c = scol; c < scol + sw; c++) {
+          const pos = pocketPos(r, c);
+          addCornerOverlays(canvas, pos.x, pos.y, pos.w, pos.h, radiusPx);
+        }
+      }
+    }
+  } else if (state.cornerMode === 'outer') {
+    // Round only the outer corners of each piece
+    const pieces = collectImagePieces(page);
+    pieces.forEach(piece => {
+      const startPos = pocketPos(piece.firstRow, piece.firstCol);
+      const endPos = pocketPos(piece.lastRow, piece.lastCol);
+      const x = startPos.x;
+      const y = startPos.y;
+      const w = (endPos.x + endPos.w) - startPos.x;
+      const h = (endPos.y + endPos.h) - startPos.y;
+      addCornerOverlays(canvas, x, y, w, h, radiusPx);
+    });
+  }
+}
+
+// Add 4 corner overlay elements at the corners of a rectangle
+function addCornerOverlays(canvas, x, y, w, h, radiusPx) {
+  const corners = [
+    { cls: 'tl', dx: 0, dy: 0 },
+    { cls: 'tr', dx: w - radiusPx, dy: 0 },
+    { cls: 'bl', dx: 0, dy: h - radiusPx },
+    { cls: 'br', dx: w - radiusPx, dy: h - radiusPx }
+  ];
+  
+  corners.forEach(corner => {
+    const overlay = document.createElement('div');
+    overlay.className = 'corner-overlay ' + corner.cls;
+    overlay.style.left = (x + corner.dx) + 'px';
+    overlay.style.top = (y + corner.dy) + 'px';
+    overlay.style.width = radiusPx + 'px';
+    overlay.style.height = radiusPx + 'px';
+    canvas.appendChild(overlay);
+  });
+}
+
+// ============================================================
 // BINDER UPDATE
 // ============================================================
 function updateBinder() {
@@ -154,7 +291,7 @@ function updateClipboardIndicator() {
 }
 
 // ============================================================
-// RENDER - PER-POCKET IMAGE PARTS (Michi Method)
+// RENDER
 // ============================================================
 function renderPocketImagePart(pocketEl, imgData, slotOriginRow, slotOriginCol, pocketRow, pocketCol) {
   const p = currentPage();
@@ -246,6 +383,7 @@ function renderBinder() {
   canvas.style.width = totalW + 'px';
   canvas.style.height = totalH + 'px';
 
+  // Render pockets with image parts
   for (let row = 0; row < p.rows; row++) {
     for (let col = 0; col < p.cols; col++) {
       const pos = pocketPos(row, col);
@@ -323,6 +461,7 @@ function renderBinder() {
     }
   }
 
+  // Render continuous seam bridges
   for (const key in p.images) {
     const [srow, scol] = key.split(',').map(Number);
     const img = p.images[key];
@@ -344,6 +483,7 @@ function renderBinder() {
     }
   }
 
+  // Render cut seam masks
   for (const key in p.images) {
     const [srow, scol] = key.split(',').map(Number);
     const img = p.images[key];
@@ -381,6 +521,10 @@ function renderBinder() {
     }
   }
 
+  // Render corner overlays for rounded corners (outer or every mode)
+  renderCornerOverlays(canvas);
+
+  // Selected slot outline (on top of everything)
   if (state.selectedSlot) {
     const { row, col } = state.selectedSlot;
     const key = row + ',' + col;
@@ -399,6 +543,7 @@ function renderBinder() {
     }
   }
 
+  // Seam toggle buttons
   for (let row = 0; row < p.rows; row++) {
     for (let s = 0; s < p.cols - 1; s++) {
       const pos = pocketPos(row, s);
@@ -505,9 +650,9 @@ function updateProperties() {
   const slotSection = document.getElementById('slot-size-section');
   const imgSection = document.getElementById('image-section');
   if (!state.selectedSlot) {
-    props.innerHTML = '<div style="color:#888;font-size:12px">No selection</div>';
+    props.innerHTML = '<div class="empty-note">No selection</div>';
     slotSection.style.display = 'block';
-    imgSection.style.display = 'none';
+    imgSection.classList.add('hidden');
     return;
   }
   const { row, col } = state.selectedSlot;
@@ -523,7 +668,7 @@ function updateProperties() {
       '<div style="font-size:13px">Image: R' + (row + 1) + 'C' + (col + 1) + '</div>' +
       '<div style="font-size:11px;color:#888;margin-top:4px">Slot: ' + sw + 'x' + sh + ' pockets = ' + slotMm.w.toFixed(1) + 'x' + slotMm.h.toFixed(1) + ' mm</div>' +
       '<div style="font-size:11px;color:#888">Image width: ' + img.widthMm.toFixed(1) + ' mm</div>';
-    imgSection.style.display = 'block';
+    imgSection.classList.remove('hidden');
     document.getElementById('slot-w').value = sw;
     document.getElementById('slot-h').value = sh;
     document.getElementById('img-width-mm').value = img.widthMm.toFixed(1);
@@ -541,7 +686,7 @@ function updateProperties() {
       extra = '<div style="font-size:11px;color:#888;margin-top:4px">Set slot size and drop image</div>';
     }
     props.innerHTML = '<div style="font-size:13px">Empty: R' + (row + 1) + 'C' + (col + 1) + '</div>' + extra;
-    imgSection.style.display = 'none';
+    imgSection.classList.add('hidden');
     if (!state.rangeSelection) {
       document.getElementById('slot-w').value = 1;
       document.getElementById('slot-h').value = 1;
@@ -898,6 +1043,9 @@ function loadProject(event) {
       state.selectedSlot = null;
       state.rangeSelection = null;
       state.currentPage = Math.min(state.currentPage || 0, state.pages.length - 1);
+      // Backwards compatibility for cornerMode
+      if (state.cornerMode === undefined) state.cornerMode = 'none';
+      if (state.cornerRadius === undefined) state.cornerRadius = 3;
       state.pages.forEach(page => {
         for (const key in page.images) {
           const img = page.images[key];
@@ -916,6 +1064,9 @@ function loadProject(event) {
         }
       });
       loadPageToUI();
+      document.getElementById('corner-mode').value = state.cornerMode;
+      document.getElementById('corner-radius').value = state.cornerRadius;
+      updateCorners();
       renderPagesList();
       renderBinder();
       updatePhysicalInfo();
@@ -949,9 +1100,14 @@ function newProject() {
     selectedSlot: null,
     rangeSelection: null,
     viewScale: 3,
-    clipboard: null
+    clipboard: null,
+    cornerMode: 'none',
+    cornerRadius: 3
   };
   loadPageToUI();
+  document.getElementById('corner-mode').value = 'none';
+  document.getElementById('corner-radius').value = 3;
+  updateCorners();
   renderPagesList();
   renderBinder();
   updatePhysicalInfo();
@@ -959,11 +1115,8 @@ function newProject() {
 }
 
 // ============================================================
-// PRINT LOGIC - NEW: BIN PACKING WITH SEAM GAPS
+// PRINT LOGIC - BIN PACKING WITH SEAM GAPS AND CORNER ROUNDING
 // ============================================================
-
-// Collect all printable pieces from all pages
-// Each piece is a contiguous rectangle of pockets bounded by cut seams
 function collectPrintPieces() {
   const pieces = [];
   state.pages.forEach((page, pageIdx) => {
@@ -973,8 +1126,6 @@ function collectPrintPieces() {
       const sw = img.slotW || 1;
       const sh = img.slotH || 1;
 
-      // Find contiguous sub-rectangles bounded by cut seams
-      // Split by cut seams in horizontal direction
       const colGroups = [];
       let currentGroup = [scol];
       for (let c = scol; c < scol + sw - 1; c++) {
@@ -987,7 +1138,6 @@ function collectPrintPieces() {
       }
       colGroups.push(currentGroup);
 
-      // Split by cut seams in vertical direction
       const rowGroups = [];
       let currentRowGroup = [srow];
       for (let r = srow; r < srow + sh - 1; r++) {
@@ -1000,7 +1150,6 @@ function collectPrintPieces() {
       }
       rowGroups.push(currentRowGroup);
 
-            // For each sub-rectangle, compute physical size and offset within the original image
       rowGroups.forEach(rowGroup => {
         colGroups.forEach(colGroup => {
           const firstCol = colGroup[0];
@@ -1009,12 +1158,9 @@ function collectPrintPieces() {
           const lastRow = rowGroup[rowGroup.length - 1];
           const pieceW_pockets = lastCol - firstCol + 1;
           const pieceH_pockets = lastRow - firstRow + 1;
-
-          // Physical size of this piece (including internal continuous seams)
           const pieceW_mm = pieceW_pockets * page.pocketW + (pieceW_pockets - 1) * page.seamH;
           const pieceH_mm = pieceH_pockets * page.pocketH + (pieceH_pockets - 1) * page.seamV;
 
-          // Offset of this piece within the original slot (mm)
           let offsetX_mm = 0;
           let offsetY_mm = 0;
           for (let c = scol; c < firstCol; c++) {
@@ -1034,6 +1180,10 @@ function collectPrintPieces() {
             offsetY_mm: offsetY_mm,
             seamH: page.seamH,
             seamV: page.seamV,
+            pocketW: page.pocketW,
+            pocketH: page.pocketH,
+            pieceCols: pieceW_pockets,
+            pieceRows: pieceH_pockets,
             label: 'P' + (pageIdx + 1) + ' R' + (firstRow + 1) + 'C' + (firstCol + 1)
           });
         });
@@ -1043,20 +1193,12 @@ function collectPrintPieces() {
   return pieces;
 }
 
-// Bin packing: Shelf algorithm with First Fit Decreasing Height
-// Places each piece with a gap (seam margin) around it for cutting
 function packPieces(pieces, paperW, paperH, gapMm) {
-  // Try each piece in both orientations, choose based on total sheets needed
   const sheets = [];
-
-  // Sort pieces by height descending (shelf packing works best this way)
   const sortedPieces = pieces.slice().sort((a, b) => b.heightMm - a.heightMm);
 
   for (const piece of sortedPieces) {
-    // Try to place in existing sheets first
     let placed = false;
-
-    // Try both orientations
     const orientations = [
       { w: piece.widthMm, h: piece.heightMm, rotated: false },
       { w: piece.heightMm, h: piece.widthMm, rotated: true }
@@ -1073,7 +1215,6 @@ function packPieces(pieces, paperW, paperH, gapMm) {
     }
 
     if (!placed) {
-      // Create new sheet
       const newSheet = { shelves: [], placements: [] };
       for (const orient of orientations) {
         if (tryPlaceOnSheet(newSheet, piece, orient, paperW, paperH, gapMm)) {
@@ -1084,7 +1225,6 @@ function packPieces(pieces, paperW, paperH, gapMm) {
       if (placed) {
         sheets.push(newSheet);
       } else {
-        // Piece too large even for empty sheet
         return { sheets, tooLarge: piece };
       }
     }
@@ -1095,21 +1235,13 @@ function packPieces(pieces, paperW, paperH, gapMm) {
 function tryPlaceOnSheet(sheet, piece, orient, paperW, paperH, gapMm) {
   const w = orient.w;
   const h = orient.h;
-
-  // Piece must fit within paper (accounting for gap on all sides for cutting)
   if (w > paperW || h > paperH) return false;
 
-  // Try to fit in existing shelves
   for (const shelf of sheet.shelves) {
-    // Shelf height must accommodate this piece
     if (h > shelf.height) continue;
-
-    // Calculate horizontal position: after last placement + gap
     let nextX = shelf.usedWidth;
     if (shelf.usedWidth > 0) nextX += gapMm;
-
     if (nextX + w <= paperW) {
-      // Fits in this shelf
       sheet.placements.push({
         piece: piece,
         orient: orient,
@@ -1123,7 +1255,6 @@ function tryPlaceOnSheet(sheet, piece, orient, paperW, paperH, gapMm) {
     }
   }
 
-  // Create new shelf
   let nextY = 0;
   if (sheet.shelves.length > 0) {
     const lastShelf = sheet.shelves[sheet.shelves.length - 1];
@@ -1142,7 +1273,6 @@ function tryPlaceOnSheet(sheet, piece, orient, paperW, paperH, gapMm) {
     });
     return true;
   }
-
   return false;
 }
 
@@ -1169,17 +1299,10 @@ function getPaperDimensions() {
   return { w, h, margin, usableW: w - 2 * margin, usableH: h - 2 * margin, size, orient };
 }
 
-function toggleCornerRadius() {
-  const enabled = document.getElementById('round-corners').checked;
-  document.getElementById('corner-radius-field').style.display = enabled ? 'flex' : 'none';
-}
-
 function updatePrintFit() {
   const paper = getPaperDimensions();
   const resultEl = document.getElementById('print-fit-result');
   const confirmBtn = document.getElementById('print-confirm');
-
-  // Collect all printable pieces
   const pieces = collectPrintPieces();
 
   if (pieces.length === 0) {
@@ -1189,15 +1312,12 @@ function updatePrintFit() {
     return;
   }
 
-  // Get largest seam value for gap between printed pieces
-  // Use the largest seam value from all pages (safest for cutting)
   let maxSeam = 0;
   state.pages.forEach(page => {
     maxSeam = Math.max(maxSeam, page.seamH, page.seamV);
   });
   const gapMm = maxSeam;
 
-  // Pack pieces
   const result = packPieces(pieces, paper.usableW, paper.usableH, gapMm);
 
   if (result.tooLarge) {
@@ -1222,28 +1342,26 @@ function updatePrintFit() {
     msg += '<br><span style="color:#FFB000">' + rotatedCount + ' piece' + (rotatedCount !== 1 ? 's' : '') + ' auto-rotated to fit</span>';
   }
   msg += '<br><span style="font-size:11px;color:#888">Gap between pieces: ' + gapMm + ' mm (matches largest seam for cutting)</span>';
+  if (state.cornerMode !== 'none') {
+    const modeText = state.cornerMode === 'outer' ? 'outer edges' : 'every card';
+    msg += '<br><span style="font-size:11px;color:#888">Corners rounded: ' + state.cornerRadius + ' mm on ' + modeText + '</span>';
+  }
   resultEl.innerHTML = msg;
   confirmBtn.disabled = false;
 
-  // Store result for confirmPrint
   window._printResult = result;
   window._printPaper = paper;
   window._printGap = gapMm;
 }
+
 function confirmPrint() {
   const paper = window._printPaper;
   const result = window._printResult;
   const gapMm = window._printGap;
-
   if (!paper || !result) {
     updatePrintFit();
     return;
   }
-
-  // Get corner radius setting
-  const roundCorners = document.getElementById('round-corners').checked;
-  const cornerRadiusMm = roundCorners ? parseFloat(document.getElementById('corner-radius').value) : 0;
-
   const styleEl = document.createElement('style');
   styleEl.id = 'dynamic-print-style';
   styleEl.textContent = '@page { size: ' + paper.size + ' ' + paper.orient + '; margin: ' + paper.margin + 'mm; }';
@@ -1251,13 +1369,10 @@ function confirmPrint() {
   if (oldStyle) oldStyle.remove();
   document.head.appendChild(styleEl);
   closePrintDialog();
-  preparePrint(result, paper, gapMm, cornerRadiusMm);
+  preparePrint(result, paper, gapMm);
 }
 
-// ============================================================
-// PRINT RENDERING - New bin-packed layout
-// ============================================================
-function preparePrint(packResult, paper, gapMm, cornerRadiusMm) {
+function preparePrint(packResult, paper, gapMm) {
   const canvasArea = document.getElementById('canvas-area');
   const MM_TO_PX = 96 / 25.4;
   canvasArea.innerHTML = '';
@@ -1272,7 +1387,7 @@ function preparePrint(packResult, paper, gapMm, cornerRadiusMm) {
     sheetDiv.style.margin = '0 auto';
 
     sheet.placements.forEach(placement => {
-      renderPrintPiece(sheetDiv, placement, MM_TO_PX, cornerRadiusMm);
+      renderPrintPiece(sheetDiv, placement, MM_TO_PX);
     });
 
     canvasArea.appendChild(sheetDiv);
@@ -1289,12 +1404,11 @@ function preparePrint(packResult, paper, gapMm, cornerRadiusMm) {
   }, 100);
 }
 
-function renderPrintPiece(sheetDiv, placement, MM_TO_PX, cornerRadiusMm) {
+function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   const piece = placement.piece;
   const orient = placement.orient;
   const img = piece.image;
 
-  // Create piece container at (placement.x, placement.y) with (orient.w, orient.h)
   const pieceDiv = document.createElement('div');
   pieceDiv.style.position = 'absolute';
   pieceDiv.style.left = (placement.x * MM_TO_PX) + 'px';
@@ -1303,12 +1417,15 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX, cornerRadiusMm) {
   pieceDiv.style.height = (orient.h * MM_TO_PX) + 'px';
   pieceDiv.style.overflow = 'hidden';
 
-  // Apply rounded corners if requested
-  if (cornerRadiusMm && cornerRadiusMm > 0) {
-    pieceDiv.style.borderRadius = (cornerRadiusMm * MM_TO_PX) + 'px';
+  // Apply corner rounding based on current mode
+  if (state.cornerMode !== 'none' && state.cornerRadius > 0) {
+    if (state.cornerMode === 'outer') {
+      // Round the piece's outer corners
+      pieceDiv.style.borderRadius = (state.cornerRadius * MM_TO_PX) + 'px';
+    }
+    // 'every' mode is handled below with per-pocket masks
   }
 
-  // The image needs to be positioned so that the correct portion shows within the piece
   const imgEl = document.createElement('img');
   imgEl.src = img.src;
   imgEl.style.position = 'absolute';
@@ -1330,7 +1447,143 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX, cornerRadiusMm) {
   }
   pieceDiv.appendChild(imgEl);
 
+  // For 'every' mode: add corner overlays for each pocket within the piece
+  if (state.cornerMode === 'every' && state.cornerRadius > 0) {
+    renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX);
+  }
+
   sheetDiv.appendChild(pieceDiv);
+}
+
+// For 'every' mode: place white corner overlays at each pocket within the piece
+function renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX) {
+  const radiusPx = state.cornerRadius * MM_TO_PX;
+  const pocketW_mm = piece.pocketW;
+  const pocketH_mm = piece.pocketH;
+  const seamH_mm = piece.seamH;
+  const seamV_mm = piece.seamV;
+  const cols = piece.pieceCols;
+  const rows = piece.pieceRows;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      let x_mm, y_mm, w_mm, h_mm;
+      
+      if (!orient.rotated) {
+        x_mm = c * (pocketW_mm + seamH_mm);
+        y_mm = r * (pocketH_mm + seamV_mm);
+        w_mm = pocketW_mm;
+        h_mm = pocketH_mm;
+      } else {
+        // When rotated, pockets flip - width becomes height
+        x_mm = r * (pocketH_mm + seamV_mm);
+        y_mm = c * (pocketW_mm + seamH_mm);
+        w_mm = pocketH_mm;
+        h_mm = pocketW_mm;
+      }
+
+      const x_px = x_mm * MM_TO_PX;
+      const y_px = y_mm * MM_TO_PX;
+      const w_px = w_mm * MM_TO_PX;
+      const h_px = h_mm * MM_TO_PX;
+
+      const corners = [
+        { cls: 'tl', dx: 0, dy: 0 },
+        { cls: 'tr', dx: w_px - radiusPx, dy: 0 },
+        { cls: 'bl', dx: 0, dy: h_px - radiusPx },
+        { cls: 'br', dx: w_px - radiusPx, dy: h_px - radiusPx }
+      ];
+      corners.forEach(corner => {
+        const overlay = document.createElement('div');
+        overlay.className = 'corner-overlay ' + corner.cls;
+        overlay.style.left = (x_px + corner.dx) + 'px';
+        overlay.style.top = (y_px + corner.dy) + 'px';
+        overlay.style.width = radiusPx + 'px';
+        overlay.style.height = radiusPx + 'px';
+        pieceDiv.appendChild(overlay);
+      });
+    }
+  }
+}
+
+// ============================================================
+// SIZE GUIDE DIALOG
+// ============================================================
+function openSizeGuideDialog() {
+  renderSizeGuide();
+  document.getElementById('size-guide-modal').classList.add('open');
+}
+
+function closeSizeGuideDialog() {
+  document.getElementById('size-guide-modal').classList.remove('open');
+}
+
+function renderSizeGuide() {
+  const p = currentPage();
+  const pocketW = p.pocketW;
+  const pocketH = p.pocketH;
+  const seamH = p.seamH;
+  const seamV = p.seamV;
+
+  document.getElementById('sg-pocket-info').textContent = pocketW + ' × ' + pocketH + ' mm';
+  const seamText = (seamH === seamV) ? seamH + ' mm' : 'H:' + seamH + ' mm, V:' + seamV + ' mm';
+  document.getElementById('sg-seam-info').textContent = seamText;
+
+  const contentEl = document.getElementById('size-guide-content');
+  contentEl.innerHTML = '';
+
+  const sections = [
+    { title: 'Horizontal Slots (1 row)', rows: 1, cols: [1, 2, 3, 4] },
+    { title: 'Medium Grid Slots (2 rows)', rows: 2, cols: [1, 2, 3, 4] },
+    { title: 'Tall Grid Slots (3 rows)', rows: 3, cols: [1, 2, 3, 4] }
+  ];
+
+  sections.forEach(section => {
+    const sectionEl = document.createElement('div');
+    sectionEl.className = 'size-guide-section';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'size-guide-section-title';
+    titleEl.textContent = section.title;
+    sectionEl.appendChild(titleEl);
+
+    const gridEl = document.createElement('div');
+    gridEl.className = 'size-guide-grid';
+
+    section.cols.forEach(cols => {
+      const rows = section.rows;
+      const widthMm = cols * pocketW + (cols - 1) * seamH;
+      const heightMm = rows * pocketH + (rows - 1) * seamV;
+      const widthInches = (widthMm / 25.4).toFixed(2);
+      const heightInches = (heightMm / 25.4).toFixed(2);
+
+      const maxDim = 60;
+      const ratio = widthMm / heightMm;
+      let previewW, previewH;
+      if (ratio > 1) {
+        previewW = Math.min(maxDim * 1.5, 100);
+        previewH = previewW / ratio;
+      } else {
+        previewH = maxDim;
+        previewW = previewH * ratio;
+      }
+
+      const itemEl = document.createElement('div');
+      itemEl.className = 'size-guide-item';
+      itemEl.innerHTML =
+        '<div class="preview">' +
+        '  <div class="preview-box" style="width:' + previewW + 'px;height:' + previewH + 'px"></div>' +
+        '</div>' +
+        '<div class="label">' + cols + '×' + rows + '</div>' +
+        '<div class="mm">' + widthMm.toFixed(1) + ' × ' + heightMm.toFixed(1) + ' mm</div>' +
+        '<div class="inches">' + widthInches + '" × ' + heightInches + '"</div>';
+
+      gridEl.appendChild(itemEl);
+    });
+
+    sectionEl.appendChild(gridEl);
+    contentEl.appendChild(sectionEl);
+  });
 }
 
 // ============================================================
@@ -1486,6 +1739,9 @@ document.getElementById('print-modal').addEventListener('click', (e) => {
 document.getElementById('about-modal').addEventListener('click', (e) => {
   if (e.target.id === 'about-modal') closeAboutDialog();
 });
+document.getElementById('size-guide-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'size-guide-modal') closeSizeGuideDialog();
+});
 
 // ============================================================
 // STARTUP
@@ -1493,3 +1749,4 @@ document.getElementById('about-modal').addEventListener('click', (e) => {
 loadPageToUI();
 renderPagesList();
 updateBinder();
+updateCorners();

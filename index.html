@@ -65,6 +65,25 @@
     <button class="secondary full-width mt-5" onclick="setAllSeams('continuous')">All CONTINUOUS</button>
     <div class="info">Click any seam on canvas to toggle between cut and continuous.</div>
   </div>
+  
+  <h2 class="mt-20">Corners</h2>
+  <div class="subsection">
+    <div class="field">
+      <label>Style</label>
+      <select id="corner-mode" onchange="updateCorners()">
+        <option value="none" selected>No rounding</option>
+        <option value="outer">Round outer edges</option>
+        <option value="every">Round every card</option>
+      </select>
+    </div>
+    <div class="field hidden" id="corner-radius-field">
+      <label>Radius (mm)</label>
+      <input type="number" id="corner-radius" value="3" min="0.5" max="10" step="0.5" onchange="updateCorners()">
+    </div>
+    <div class="info">
+      Preview shows rounded corners and they carry over to print. No corner cutter tool needed.
+    </div>
+  </div>
 </div>
 
 <div id="canvas-area"><div id="binder-canvas"></div></div>
@@ -143,16 +162,6 @@
       <label>Margin (mm)</label>
       <input type="number" id="paper-margin" value="5" min="0" max="20" step="1" onchange="updatePrintFit()">
     </div>
-    <div class="field checkbox-field">
-      <label>
-        <input type="checkbox" id="round-corners" checked onchange="toggleCornerRadius()">
-        Round corners for cutting
-      </label>
-    </div>
-    <div class="field" id="corner-radius-field">
-      <label>Corner radius (mm)</label>
-      <input type="number" id="corner-radius" value="3" min="0" max="10" step="0.5">
-    </div>
     <div id="print-fit-result"></div>
     <div class="modal-actions">
       <button class="secondary" onclick="closePrintDialog()">Cancel</button>
@@ -191,7 +200,7 @@
       dimensions.
     </p>
     <p class="modal-para">
-      <b>Version:</b> 3.1<br>
+      <b>Version:</b> 3.2<br>
       <b>License:</b> MIT (free and open source)<br>
       <b>Author:</b> Risto Ruuskanen
     </p>
