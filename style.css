@@ -220,6 +220,11 @@ button.accent:disabled {
 .pocket:hover { border-color: #FFB000; }
 .pocket.selected { border: 2px solid #FFB000; z-index: 3; }
 .pocket.drag-over { background: #fff3d6; border-color: #FFB000; }
+.pocket.move-target {
+  border: 2px dashed #FFB000 !important;
+  background: rgba(255, 176, 0, 0.15) !important;
+  z-index: 2;
+}
 .pocket.has-image { border: 1px solid #888; }
 .pocket.range-selected {
   border: 2px solid #FFB000 !important;

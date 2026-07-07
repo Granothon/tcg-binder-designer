@@ -69,6 +69,7 @@ Michify supports common shortcuts familiar from other design and office tools.
 | `Shift`+click a pocket | Extend selection to a rectangular area |
 | Click empty canvas background | Clear all selections and pan freely |
 | `E` | Mark selected pocket (or range) as intentionally empty. Press again to unmark. |
+| `Alt` + drag an image | Move the image to another slot, or swap it with the target image |
 
 ## Understanding seams
 

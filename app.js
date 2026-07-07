@@ -22,6 +22,7 @@ let state = {
 
 let rangeSelecting = null;
 let dragging = null;
+let movingImage = null; // { fromKey, fromRow, fromCol, startX, startY } for cross-slot image drag
 
 function createEmptyPage() {
   return {
@@ -484,6 +485,18 @@ function renderBinder() {
           e.preventDefault();
           return;
         }
+        // Alt-drag on an image pocket = move/swap image between slots
+        if (e.altKey && slot) {
+          movingImage = {
+            fromKey: slot.key,
+            fromRow: slot.row,
+            fromCol: slot.col,
+            startX: e.clientX,
+            startY: e.clientY
+          };
+          e.preventDefault();
+          return;
+        }
         if (!slot) {
           rangeSelecting = { startRow: row, startCol: col, currentRow: row, currentCol: col };
         }
@@ -494,6 +507,11 @@ function renderBinder() {
           rangeSelecting.currentRow = row;
           rangeSelecting.currentCol = col;
           updateRangeSelectionPreview();
+        }
+        if (movingImage) {
+          // Highlight potential drop target
+          document.querySelectorAll('.pocket.move-target').forEach(el => el.classList.remove('move-target'));
+          pocket.classList.add('move-target');
         }
       });
 
@@ -991,6 +1009,79 @@ function duplicateToNeighbor(dir) {
   setStatus('Duplicated ' + dir);
 }
 
+// ============================================================
+// MOVE / SWAP IMAGE BETWEEN SLOTS (Alt+drag)
+// ============================================================
+function moveOrSwapImage(fromRow, fromCol, toRow, toCol) {
+  const p = currentPage();
+  const fromKey = fromRow + ',' + fromCol;
+  const srcImg = p.images[fromKey];
+  if (!srcImg) return;
+
+  // Determine the target's slot (may be different origin if hovering a multi-pocket slot)
+  const targetSlot = findSlotAt(toRow, toCol);
+  const targetKey = targetSlot ? targetSlot.key : toRow + ',' + toCol;
+  const [tRow, tCol] = targetKey.split(',').map(Number);
+
+  // No-op if dropping to the same slot
+  if (targetKey === fromKey) return;
+
+  const srcW = srcImg.slotW || 1;
+  const srcH = srcImg.slotH || 1;
+
+  if (targetSlot) {
+    // Swap: target has an image
+    const targetImg = targetSlot.image;
+    const targetW = targetImg.slotW || 1;
+    const targetH = targetImg.slotH || 1;
+
+    // Check that both slots can fit each other's dimensions
+    // Temporarily remove both, then check availability
+    delete p.images[fromKey];
+    delete p.images[targetKey];
+    const sourceFits = isAreaFree(fromRow, fromCol, targetW, targetH, null);
+    const targetFits = isAreaFree(tRow, tCol, srcW, srcH, null);
+    if (!sourceFits || !targetFits) {
+      // Restore and abort
+      p.images[fromKey] = srcImg;
+      p.images[targetKey] = targetImg;
+      setStatus('Swap failed: slot sizes incompatible');
+      return;
+    }
+    // Do the swap: place each image at the other's origin, keeping their own slot sizes
+    p.images[fromKey] = Object.assign({}, targetImg, { slotW: targetW, slotH: targetH });
+    p.images[targetKey] = Object.assign({}, srcImg, { slotW: srcW, slotH: srcH });
+    clampImage(p.images[fromKey]);
+    clampImage(p.images[targetKey]);
+    state.selectedSlot = { row: tRow, col: tCol };
+    setStatus('Images swapped');
+  } else {
+    // Move: target is empty
+    delete p.images[fromKey];
+    if (!isAreaFree(tRow, tCol, srcW, srcH, null)) {
+      // Restore and abort
+      p.images[fromKey] = srcImg;
+      setStatus('Move failed: not enough space at target');
+      return;
+    }
+    p.images[targetKey] = srcImg;
+    clampImage(p.images[targetKey]);
+    // Remove any intentional-empty marking at the new location
+    if (p.emptyPockets && p.emptyPockets.length > 0) {
+      for (let r = tRow; r < tRow + srcH; r++) {
+        for (let c = tCol; c < tCol + srcW; c++) {
+          const ek = r + ',' + c;
+          const idx = p.emptyPockets.indexOf(ek);
+          if (idx >= 0) p.emptyPockets.splice(idx, 1);
+        }
+      }
+    }
+    state.selectedSlot = { row: tRow, col: tCol };
+    setStatus('Image moved');
+  }
+  renderBinder();
+}
+
 function handleDrop(e, row, col) {
   const files = e.dataTransfer.files;
   if (files.length === 0) return;
@@ -1080,6 +1171,7 @@ function autoFitImage(row, col) {
   };
   tempImg.src = d.src;
 }
+
 // ============================================================
 // PAGES MANAGEMENT
 // ============================================================
@@ -1495,26 +1587,12 @@ function calculateDpiWarnings() {
       const img = page.images[key];
       const sw = img.slotW || 1;
       const sh = img.slotH || 1;
-
-      // Physical slot size in mm
       const slotW_mm = sw * page.pocketW + (sw - 1) * page.seamH;
-      const slotH_mm = sh * page.pocketH + (sh - 1) * page.seamV;
-
-      // The image covers slot width (widthMm). Compute the visible pixel density
-      // The image natural size is not directly stored, but we know:
-      // - image is displayed at widthMm mm wide
-      // - _naturalRatio tells its width/height ratio
-      // We need to know the natural pixel width. Read it from a temp image if not cached.
       const naturalPx = img._naturalPxWidth;
       if (!naturalPx) {
-        // Trigger async measurement, use fallback for now
         cacheNaturalPixels(img);
         continue;
       }
-
-      // How many source pixels cover the slot?
-      // The image is scaled so widthMm mm equals naturalPx pixels.
-      // Slot width is slotW_mm. So visible px width = naturalPx * (slotW_mm / widthMm)
       const visiblePxW = naturalPx * (slotW_mm / img.widthMm);
       const slotW_inch = slotW_mm / MM_PER_INCH;
       const dpi = Math.round(visiblePxW / slotW_inch);
@@ -1559,7 +1637,6 @@ function calculateDpiWarnings() {
   return { summary: summary, level: level };
 }
 
-// Cache natural pixel dimensions of an image for DPI calculations
 function cacheNaturalPixels(img) {
   if (img._pxMeasureInProgress) return;
   img._pxMeasureInProgress = true;
@@ -1568,7 +1645,6 @@ function cacheNaturalPixels(img) {
     img._naturalPxWidth = t.width;
     img._naturalPxHeight = t.height;
     img._pxMeasureInProgress = false;
-    // Re-run print fit if the print dialog is open
     const modal = document.getElementById('print-modal');
     if (modal && modal.classList.contains('open')) {
       updatePrintFit();
@@ -1712,6 +1788,7 @@ function renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX) {
     }
   }
 }
+
 // ============================================================
 // ABOUT DIALOG
 // ============================================================
@@ -1861,6 +1938,8 @@ document.addEventListener('mousedown', (e) => {
   const c = parseInt(pocket.dataset.col);
   const slot = findSlotAt(r, c);
   if (!slot) return;
+  // If Alt-key is held, the pocket mousedown already handles it, skip document-level pan
+  if (e.altKey) return;
   if (!state.selectedSlot || state.selectedSlot.row !== slot.row || state.selectedSlot.col !== slot.col) return;
   const img = currentPage().images[slot.key];
   if (!img) return;
@@ -1887,6 +1966,24 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener('mouseup', (e) => {
+  // Handle image move/swap drop first
+  if (movingImage) {
+    document.querySelectorAll('.pocket.move-target').forEach(el => el.classList.remove('move-target'));
+    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+    const targetPocket = targetEl ? targetEl.closest('.pocket') : null;
+    if (targetPocket) {
+      const toRow = parseInt(targetPocket.dataset.row);
+      const toCol = parseInt(targetPocket.dataset.col);
+      const dx = Math.abs(e.clientX - movingImage.startX);
+      const dy = Math.abs(e.clientY - movingImage.startY);
+      // Only move if the user actually dragged (more than 3px) to a different pocket
+      if ((toRow !== movingImage.fromRow || toCol !== movingImage.fromCol) && (dx > 3 || dy > 3)) {
+        moveOrSwapImage(movingImage.fromRow, movingImage.fromCol, toRow, toCol);
+      }
+    }
+    movingImage = null;
+    return;
+  }
   if (dragging) {
     updateProperties();
     setTimeout(() => { dragging = null; }, 50);
