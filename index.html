@@ -28,7 +28,6 @@
   <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="support-link">
     ☕ Buy me a coffee
   </a>
-  <button onclick="openSizeGuideDialog()">Size Guide</button>
   <button onclick="openAboutDialog()">About</button>
   <button onclick="openPrintDialog()">Print / PDF</button>
 </header>
@@ -191,26 +190,6 @@
     <div class="modal-actions">
       <button class="secondary" onclick="closePrintDialog()">Cancel</button>
       <button class="accent" id="print-confirm" onclick="confirmPrint()">Print</button>
-    </div>
-  </div>
-</div>
-
-<!-- Size Guide dialog -->
-<div class="modal-backdrop" id="size-guide-modal">
-  <div class="modal size-guide-modal">
-    <h3>Size Guide</h3>
-    <p class="size-guide-intro">
-      Calculated from your current binder dimensions: pocket <span id="sg-pocket-info">68 × 93 mm</span>, 
-      seams <span id="sg-seam-info">2 mm</span>.
-    </p>
-    <div id="size-guide-content"></div>
-    <p class="size-guide-note">
-      These sizes include your specified seam widths between pockets, so images spanning multiple pockets 
-      show the full physical dimensions needed for printing. When seams are set to "continuous" in your 
-      layout, the image continues across the seam. When "cut", the seam area is not printed (image is split).
-    </p>
-    <div class="modal-actions">
-      <button class="accent" onclick="closeSizeGuideDialog()">Close</button>
     </div>
   </div>
 </div>

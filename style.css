@@ -634,61 +634,6 @@ input[type="file"] { display: none; }
 }
 
 /* ============================================================
-   SIZE GUIDE DIALOG
-   ============================================================ */
-.modal.size-guide-modal {
-  min-width: 600px;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.size-guide-intro { font-size: 12px; color: #bbb; margin-bottom: 16px; }
-.size-guide-note { font-size: 11px; color: #888; margin-top: 16px; line-height: 1.5; }
-.size-guide-section { margin-bottom: 24px; }
-.size-guide-section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #FFB000;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 12px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #333;
-}
-.size-guide-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-}
-.size-guide-item {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 6px;
-  padding: 12px;
-  text-align: center;
-}
-.size-guide-item .preview {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-.size-guide-item .preview-box {
-  background: #FFB000;
-  opacity: 0.7;
-  border-radius: 3px;
-}
-.size-guide-item .label {
-  font-weight: 600;
-  color: #FFB000;
-  font-size: 15px;
-  margin-bottom: 4px;
-}
-.size-guide-item .mm { font-size: 12px; color: #eaeaea; margin-bottom: 2px; }
-.size-guide-item .inches { font-size: 11px; color: #888; }
-
-/* ============================================================
    PRINT STYLES
    ============================================================ */
 @media print {

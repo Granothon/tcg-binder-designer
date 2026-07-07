@@ -1515,74 +1515,6 @@ function renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX) {
 }
 
 // ============================================================
-// SIZE GUIDE DIALOG
-// ============================================================
-function openSizeGuideDialog() {
-  renderSizeGuide();
-  document.getElementById('size-guide-modal').classList.add('open');
-}
-
-function closeSizeGuideDialog() {
-  document.getElementById('size-guide-modal').classList.remove('open');
-}
-
-function renderSizeGuide() {
-  const p = currentPage();
-  const pocketW = p.pocketW;
-  const pocketH = p.pocketH;
-  const seamH = p.seamH;
-  const seamV = p.seamV;
-  document.getElementById('sg-pocket-info').textContent = pocketW + ' × ' + pocketH + ' mm';
-  const seamText = (seamH === seamV) ? seamH + ' mm' : 'H:' + seamH + ' mm, V:' + seamV + ' mm';
-  document.getElementById('sg-seam-info').textContent = seamText;
-  const contentEl = document.getElementById('size-guide-content');
-  contentEl.innerHTML = '';
-  const sections = [
-    { title: 'Horizontal Slots (1 row)', rows: 1, cols: [1, 2, 3, 4] },
-    { title: 'Medium Grid Slots (2 rows)', rows: 2, cols: [1, 2, 3, 4] },
-    { title: 'Tall Grid Slots (3 rows)', rows: 3, cols: [1, 2, 3, 4] }
-  ];
-  sections.forEach(section => {
-    const sectionEl = document.createElement('div');
-    sectionEl.className = 'size-guide-section';
-    const titleEl = document.createElement('div');
-    titleEl.className = 'size-guide-section-title';
-    titleEl.textContent = section.title;
-    sectionEl.appendChild(titleEl);
-    const gridEl = document.createElement('div');
-    gridEl.className = 'size-guide-grid';
-    section.cols.forEach(cols => {
-      const rows = section.rows;
-      const widthMm = cols * pocketW + (cols - 1) * seamH;
-      const heightMm = rows * pocketH + (rows - 1) * seamV;
-      const widthInches = (widthMm / 25.4).toFixed(2);
-      const heightInches = (heightMm / 25.4).toFixed(2);
-      const maxDim = 60;
-      const ratio = widthMm / heightMm;
-      let previewW, previewH;
-      if (ratio > 1) {
-        previewW = Math.min(maxDim * 1.5, 100);
-        previewH = previewW / ratio;
-      } else {
-        previewH = maxDim;
-        previewW = previewH * ratio;
-      }
-      const itemEl = document.createElement('div');
-      itemEl.className = 'size-guide-item';
-      itemEl.innerHTML = '<div class="preview">' +
-                         '  <div class="preview-box" style="width:' + previewW + 'px;height:' + previewH + 'px"></div>' +
-                         '</div>' +
-                         '<div class="label">' + cols + '×' + rows + '</div>' +
-                         '<div class="mm">' + widthMm.toFixed(1) + ' × ' + heightMm.toFixed(1) + ' mm</div>' +
-                         '<div class="inches">' + widthInches + '" × ' + heightInches + '"</div>';
-      gridEl.appendChild(itemEl);
-    });
-    sectionEl.appendChild(gridEl);
-    contentEl.appendChild(sectionEl);
-  });
-}
-
-// ============================================================
 // ABOUT DIALOG
 // ============================================================
 function openAboutDialog() {
@@ -1790,9 +1722,6 @@ document.getElementById('print-modal').addEventListener('click', (e) => {
 });
 document.getElementById('about-modal').addEventListener('click', (e) => {
   if (e.target.id === 'about-modal') closeAboutDialog();
-});
-document.getElementById('size-guide-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'size-guide-modal') closeSizeGuideDialog();
 });
 
 // ============================================================

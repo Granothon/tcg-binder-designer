@@ -21,7 +21,6 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 - **Smooth canvas navigation:** Scroll wheel over empty area zooms the whole view. Click background to clear selection and pan freely.
 - **Clone and duplicate:** Copy image crops between slots, extend images seamlessly to neighboring slots
 - **Multi-page projects:** Design a whole binder in one session, save as JSON for later editing
-- **Size Guide reference:** See all possible slot dimensions calculated from your binder measurements
 - **Rounded corners:** Optional preview and print output with rounded corners in two styles (outer edges only or every card). Default radius matches the official TCG card standard. Works as visual cutting guides even on non-white paper.
 - **Locked panning:** Images can't create empty white space, only zoom and crop within the slot
 - **Smart bin-packing printing:** Automatically arranges pieces on A4/A3 sheets with proper cutting margins
@@ -38,8 +37,7 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 8. Click or drag over pockets to select an area
 9. Drop an image onto the selected area
 10. Adjust the crop with your mouse (drag to pan, wheel to zoom) or arrow keys
-11. Optionally check the Size Guide to see all possible slot dimensions
-12. Click "Print / PDF" to export at the exact size for your binder
+11. Click "Print / PDF" to export at the exact size for your binder
 
 ## Keyboard shortcuts and navigation
 
