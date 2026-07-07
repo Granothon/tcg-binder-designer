@@ -1,16 +1,11 @@
 /*
-  Michify - TCG Binder Designer
-  Stylesheet
-  Copyright (c) 2026 Risto Ruuskanen
-  Licensed under the MIT License
+   Michify - TCG Binder Designer
+   Stylesheet
+   Copyright (c) 2026 Risto Ruuskanen
+   Licensed under the MIT License
 */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: #1a1a1a;
@@ -28,23 +23,12 @@ body {
 /* ============================================================
    UTILITY CLASSES
    ============================================================ */
-.hidden {
-  display: none !important;
-}
-
-.full-width {
-  width: 100%;
-}
-
+.hidden { display: none !important; }
+.full-width { width: 100%; }
 .mt-5 { margin-top: 5px; }
 .mt-8 { margin-top: 8px; }
 .mt-20 { margin-top: 20px; }
-
-.duplicate-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-}
+.duplicate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 
 /* ============================================================
    HEADER
@@ -58,13 +42,7 @@ header {
   padding: 0 20px;
   gap: 10px;
 }
-
-header h1 {
-  font-size: 16px;
-  font-weight: 500;
-  color: #FFB000;
-}
-
+header h1 { font-size: 16px; font-weight: 500; color: #FFB000; }
 header .tagline {
   font-size: 11px;
   color: #888;
@@ -72,7 +50,6 @@ header .tagline {
   padding-left: 10px;
   border-left: 1px solid #444;
 }
-
 header button {
   background: #333;
   color: #eaeaea;
@@ -82,15 +59,8 @@ header button {
   cursor: pointer;
   font-size: 13px;
 }
-
-header button:hover {
-  background: #3d3d3d;
-}
-
-header .spacer {
-  flex: 1;
-}
-
+header button:hover { background: #3d3d3d; }
+header .spacer { flex: 1; }
 header .support-link {
   color: #FFB000;
   text-decoration: none;
@@ -100,10 +70,7 @@ header .support-link {
   border-radius: 4px;
   transition: background 0.15s;
 }
-
-header .support-link:hover {
-  background: rgba(255, 176, 0, 0.15);
-}
+header .support-link:hover { background: rgba(255, 176, 0, 0.15); }
 
 /* ============================================================
    LAYOUT AREAS
@@ -115,7 +82,6 @@ header .support-link:hover {
   padding: 15px;
   overflow-y: auto;
 }
-
 #canvas-area {
   grid-area: canvas;
   background: #2a2a2a;
@@ -126,7 +92,6 @@ header .support-link:hover {
   position: relative;
   padding: 20px;
 }
-
 #properties {
   grid-area: properties;
   background: #202020;
@@ -158,11 +123,7 @@ h2 {
   margin-bottom: 8px;
   font-size: 13px;
 }
-
-.field label {
-  color: #bbb;
-}
-
+.field label { color: #bbb; }
 .field input[type="number"],
 .field select {
   width: 90px;
@@ -177,10 +138,7 @@ h2 {
 /* ============================================================
    PAGES LIST
    ============================================================ */
-.pages-list {
-  margin-bottom: 15px;
-}
-
+.pages-list { margin-bottom: 15px; }
 .page-item {
   background: #2a2a2a;
   border: 1px solid #444;
@@ -193,13 +151,11 @@ h2 {
   justify-content: space-between;
   align-items: center;
 }
-
 .page-item.active {
   background: #3d3d1a;
   border-color: #FFB000;
   color: #FFB000;
 }
-
 .page-item .del {
   background: transparent;
   border: none;
@@ -208,10 +164,7 @@ h2 {
   padding: 0 4px;
   font-size: 16px;
 }
-
-.page-item .del:hover {
-  color: #F43256;
-}
+.page-item .del:hover { color: #F43256; }
 
 /* ============================================================
    BUTTONS
@@ -225,11 +178,7 @@ button.secondary {
   cursor: pointer;
   font-size: 12px;
 }
-
-button.secondary:hover {
-  background: #3d3d3d;
-}
-
+button.secondary:hover { background: #3d3d3d; }
 button.accent {
   background: #FFB000;
   color: #1a1a1a;
@@ -240,11 +189,7 @@ button.accent {
   font-size: 12px;
   font-weight: 600;
 }
-
-button.accent:hover {
-  background: #ffc333;
-}
-
+button.accent:hover { background: #ffc333; }
 button.accent:disabled {
   background: #444;
   color: #888;
@@ -272,42 +217,22 @@ button.accent:disabled {
   user-select: none;
   overflow: hidden;
 }
-
-.pocket:hover {
-  border-color: #FFB000;
-}
-
-.pocket.selected {
-  border: 2px solid #FFB000;
-  z-index: 3;
-}
-
-.pocket.drag-over {
-  background: #fff3d6;
-  border-color: #FFB000;
-}
-
-.pocket.has-image {
-  border: 1px solid #888;
-}
-
+.pocket:hover { border-color: #FFB000; }
+.pocket.selected { border: 2px solid #FFB000; z-index: 3; }
+.pocket.drag-over { background: #fff3d6; border-color: #FFB000; }
+.pocket.has-image { border: 1px solid #888; }
 .pocket.range-selected {
   border: 2px solid #FFB000 !important;
   background: rgba(255, 176, 0, 0.15) !important;
   z-index: 2;
 }
-
-.pocket.in-multi-slot {
-  border-color: transparent;
-}
-
+.pocket.in-multi-slot { border-color: transparent; }
 .pocket img {
   position: absolute;
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
 }
-
 .pocket-index {
   position: absolute;
   top: 3px;
@@ -324,9 +249,14 @@ button.accent:disabled {
 /* ============================================================
    CORNER OVERLAYS
    Small white squares placed at piece/pocket corners to visually
-   round off the colored image content. Uses radial gradient to
-   create a transparent circle in the corner area, with white 
-   filling the rest of the square.
+   round off the colored image content. Each overlay is a square
+   of size radiusPx × radiusPx. A radial gradient carves a
+   transparent quarter-circle out of one corner (the one facing
+   the image), while the rest of the overlay stays white.
+
+   Using `farthest-side` sizes the gradient's 100% stop to exactly
+   the opposite edge (radiusPx away), so the transparent quarter-
+   circle fills the overlay perfectly without overshoot.
    ============================================================ */
 .corner-overlay {
   position: absolute;
@@ -334,25 +264,33 @@ button.accent:disabled {
   z-index: 11;
   background: white;
 }
-
 .corner-overlay.tl {
   /* top-left corner: circle at bottom-right of overlay */
-  background: radial-gradient(circle at 100% 100%, transparent, transparent calc(100% - 1px), white 100%);
+  background: radial-gradient(circle farthest-side at 100% 100%,
+                              transparent 0,
+                              transparent calc(100% - 0.5px),
+                              white 100%);
 }
-
 .corner-overlay.tr {
   /* top-right corner: circle at bottom-left of overlay */
-  background: radial-gradient(circle at 0% 100%, transparent, transparent calc(100% - 1px), white 100%);
+  background: radial-gradient(circle farthest-side at 0% 100%,
+                              transparent 0,
+                              transparent calc(100% - 0.5px),
+                              white 100%);
 }
-
 .corner-overlay.bl {
   /* bottom-left corner: circle at top-right of overlay */
-  background: radial-gradient(circle at 100% 0%, transparent, transparent calc(100% - 1px), white 100%);
+  background: radial-gradient(circle farthest-side at 100% 0%,
+                              transparent 0,
+                              transparent calc(100% - 0.5px),
+                              white 100%);
 }
-
 .corner-overlay.br {
   /* bottom-right corner: circle at top-left of overlay */
-  background: radial-gradient(circle at 0% 0%, transparent, transparent calc(100% - 1px), white 100%);
+  background: radial-gradient(circle farthest-side at 0% 0%,
+                              transparent 0,
+                              transparent calc(100% - 0.5px),
+                              white 100%);
 }
 
 /* ============================================================
@@ -365,37 +303,22 @@ button.accent:disabled {
   z-index: 15;
   transition: background 0.15s;
 }
-
-.seam-toggle:hover {
-  background: rgba(244, 50, 86, 0.9);
-}
-
-.seam-toggle.continuous {
-  background: rgba(71, 230, 193, 0.5);
-}
-
-.seam-toggle.continuous:hover {
-  background: rgba(71, 230, 193, 0.9);
-}
-
+.seam-toggle:hover { background: rgba(244, 50, 86, 0.9); }
+.seam-toggle.continuous { background: rgba(71, 230, 193, 0.5); }
+.seam-toggle.continuous:hover { background: rgba(71, 230, 193, 0.9); }
 .seam-bridge {
   position: absolute;
   overflow: hidden;
   z-index: 4;
   pointer-events: none;
 }
-
-.seam-bridge img {
-  position: absolute;
-}
-
+.seam-bridge img { position: absolute; }
 .cut-seam-mask {
   position: absolute;
   background: rgba(200, 200, 200, 0.85);
   z-index: 8;
   pointer-events: none;
 }
-
 .slot-outline {
   position: absolute;
   border: 2px solid #FFB000;
@@ -407,12 +330,7 @@ button.accent:disabled {
 /* ============================================================
    ZOOM CONTROLS
    ============================================================ */
-.zoom-controls {
-  display: flex;
-  gap: 5px;
-  margin-top: 8px;
-}
-
+.zoom-controls { display: flex; gap: 5px; margin-top: 8px; }
 .zoom-controls button {
   flex: 1;
   background: #333;
@@ -424,10 +342,7 @@ button.accent:disabled {
   font-size: 14px;
   font-weight: bold;
 }
-
-.zoom-controls button:hover {
-  background: #3d3d3d;
-}
+.zoom-controls button:hover { background: #3d3d3d; }
 
 /* ============================================================
    PROPERTY SUBSECTIONS
@@ -438,17 +353,8 @@ button.accent:disabled {
   border-radius: 4px;
   margin-bottom: 12px;
 }
-
-.empty-note {
-  color: #888;
-  font-size: 12px;
-}
-
-.physical-info-box {
-  font-size: 11px;
-  color: #bbb;
-  line-height: 1.7;
-}
+.empty-note { color: #888; font-size: 12px; }
+.physical-info-box { font-size: 11px; color: #bbb; line-height: 1.7; }
 
 /* ============================================================
    STATUS BAR
@@ -468,21 +374,12 @@ button.accent:disabled {
   max-width: 600px;
   text-align: center;
 }
-
-input[type="file"] {
-  display: none;
-}
+input[type="file"] { display: none; }
 
 /* ============================================================
    INFO TEXT AND LEGEND
    ============================================================ */
-.info {
-  font-size: 11px;
-  color: #888;
-  margin-top: 5px;
-  line-height: 1.4;
-}
-
+.info { font-size: 11px; color: #888; margin-top: 5px; line-height: 1.4; }
 .legend {
   display: flex;
   gap: 10px;
@@ -491,31 +388,11 @@ input[type="file"] {
   margin-top: 8px;
   flex-wrap: wrap;
 }
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.legend-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-}
-
-.swatch-cut {
-  background: rgba(244, 50, 86, 0.6);
-}
-
-.swatch-continuous {
-  background: rgba(71, 230, 193, 0.6);
-}
-
-.swatch-lost {
-  background: rgba(200, 200, 200, 0.85);
-}
-
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-swatch { width: 12px; height: 12px; border-radius: 2px; }
+.swatch-cut { background: rgba(244, 50, 86, 0.6); }
+.swatch-continuous { background: rgba(71, 230, 193, 0.6); }
+.swatch-lost { background: rgba(200, 200, 200, 0.85); }
 .clipboard-indicator {
   display: inline-block;
   padding: 2px 6px;
@@ -539,11 +416,7 @@ input[type="file"] {
   align-items: center;
   justify-content: center;
 }
-
-.modal-backdrop.open {
-  display: flex;
-}
-
+.modal-backdrop.open { display: flex; }
 .modal {
   background: #252525;
   border: 1px solid #444;
@@ -552,38 +425,18 @@ input[type="file"] {
   min-width: 400px;
   max-width: 520px;
 }
-
-.modal h3 {
-  color: #FFB000;
-  margin-bottom: 15px;
-  font-size: 18px;
-}
-
-.modal p {
-  font-size: 13px;
-  color: #bbb;
-  line-height: 1.6;
-}
-
-.modal .modal-para {
-  margin-bottom: 12px;
-}
-
+.modal h3 { color: #FFB000; margin-bottom: 15px; font-size: 18px; }
+.modal p { font-size: 13px; color: #bbb; line-height: 1.6; }
+.modal .modal-para { margin-bottom: 12px; }
 .modal .modal-actions {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   margin-top: 20px;
 }
-
-.modal .field {
-  margin-bottom: 12px;
-}
-
+.modal .field { margin-bottom: 12px; }
 .modal .field input,
-.modal .field select {
-  width: 140px;
-}
+.modal .field select { width: 140px; }
 
 /* ============================================================
    MODAL LINKS AND BUTTONS
@@ -595,12 +448,10 @@ input[type="file"] {
   text-decoration: underline;
   font-weight: 500;
 }
-
 .modal a:not(.modal-btn):hover {
   color: #ffc333;
   text-decoration: none;
 }
-
 .modal .attribution {
   font-size: 12px;
   color: #999;
@@ -611,18 +462,13 @@ input[type="file"] {
   line-height: 1.5;
   margin-bottom: 12px;
 }
-
-.modal .attribution a {
-  color: #FFB000;
-}
-
+.modal .attribution a { color: #FFB000; }
 .modal-link-buttons {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
   flex-wrap: wrap;
 }
-
 .modal a.modal-btn {
   text-decoration: none;
   padding: 8px 14px;
@@ -633,30 +479,23 @@ input[type="file"] {
   border: 1px solid transparent;
   transition: background 0.15s, border-color 0.15s;
 }
-
-.modal a.modal-btn:hover {
-  text-decoration: none;
-}
-
+.modal a.modal-btn:hover { text-decoration: none; }
 .modal a.modal-btn-accent {
   background: #FFB000;
   color: #1a1a1a;
   font-weight: 600;
   border-color: #FFB000;
 }
-
 .modal a.modal-btn-accent:hover {
   background: #ffc333;
   color: #1a1a1a;
   border-color: #ffc333;
 }
-
 .modal a.modal-btn-secondary {
   background: #333;
   color: #eaeaea;
   border-color: #444;
 }
-
 .modal a.modal-btn-secondary:hover {
   background: #3d3d3d;
   color: #eaeaea;
@@ -673,13 +512,11 @@ input[type="file"] {
   font-size: 12px;
   line-height: 1.6;
 }
-
 .fit-ok {
   background: rgba(71, 230, 193, 0.15);
   color: #47E6C1;
   border: 1px solid #47E6C1;
 }
-
 .fit-bad {
   background: rgba(244, 50, 86, 0.15);
   color: #F43256;
@@ -695,24 +532,9 @@ input[type="file"] {
   max-height: 90vh;
   overflow-y: auto;
 }
-
-.size-guide-intro {
-  font-size: 12px;
-  color: #bbb;
-  margin-bottom: 16px;
-}
-
-.size-guide-note {
-  font-size: 11px;
-  color: #888;
-  margin-top: 16px;
-  line-height: 1.5;
-}
-
-.size-guide-section {
-  margin-bottom: 24px;
-}
-
+.size-guide-intro { font-size: 12px; color: #bbb; margin-bottom: 16px; }
+.size-guide-note { font-size: 11px; color: #888; margin-top: 16px; line-height: 1.5; }
+.size-guide-section { margin-bottom: 24px; }
 .size-guide-section-title {
   font-size: 13px;
   font-weight: 600;
@@ -723,13 +545,11 @@ input[type="file"] {
   padding-bottom: 4px;
   border-bottom: 1px solid #333;
 }
-
 .size-guide-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
 }
-
 .size-guide-item {
   background: #1e1e1e;
   border: 1px solid #333;
@@ -737,7 +557,6 @@ input[type="file"] {
   padding: 12px;
   text-align: center;
 }
-
 .size-guide-item .preview {
   height: 60px;
   display: flex;
@@ -745,30 +564,19 @@ input[type="file"] {
   justify-content: center;
   margin-bottom: 8px;
 }
-
 .size-guide-item .preview-box {
   background: #FFB000;
   opacity: 0.7;
   border-radius: 3px;
 }
-
 .size-guide-item .label {
   font-weight: 600;
   color: #FFB000;
   font-size: 15px;
   margin-bottom: 4px;
 }
-
-.size-guide-item .mm {
-  font-size: 12px;
-  color: #eaeaea;
-  margin-bottom: 2px;
-}
-
-.size-guide-item .inches {
-  font-size: 11px;
-  color: #888;
-}
+.size-guide-item .mm { font-size: 12px; color: #eaeaea; margin-bottom: 2px; }
+.size-guide-item .inches { font-size: 11px; color: #888; }
 
 /* ============================================================
    PRINT STYLES
@@ -780,50 +588,27 @@ input[type="file"] {
     height: auto;
     overflow: visible;
   }
-
-  header,
-  #sidebar,
-  #properties,
-  .status-bar,
-  .modal-backdrop {
+  header, #sidebar, #properties, .status-bar, .modal-backdrop {
     display: none !important;
   }
-
   #canvas-area {
     background: white;
     overflow: visible;
     padding: 0;
     display: block;
   }
-
   .print-page {
     page-break-after: always;
     background: white;
     margin: 0 auto;
     position: relative;
   }
-
-  .print-page:last-child {
-    page-break-after: auto;
-  }
-
-  .pocket-index,
-  .seam-toggle,
-  .slot-outline {
-    display: none !important;
-  }
-
-  .pocket,
-  .pocket.has-image {
+  .print-page:last-child { page-break-after: auto; }
+  .pocket-index, .seam-toggle, .slot-outline { display: none !important; }
+  .pocket, .pocket.has-image {
     border: none !important;
     background: transparent !important;
   }
-
-  .cut-seam-mask {
-    background: white !important;
-  }
-
-  @page {
-    margin: 5mm;
-  }
+  .cut-seam-mask { background: white !important; }
+  @page { margin: 5mm; }
 }
