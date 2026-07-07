@@ -1802,6 +1802,23 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  // Delete: remove image OR unmark intentional empty
+  if (e.key === 'Delete') {
+    if (state.selectedSlot) {
+      const p = currentPage();
+      const delKey = state.selectedSlot.row + ',' + state.selectedSlot.col;
+      if (p.images[delKey]) {
+        removeImage();
+      } else if (p.emptyPockets && p.emptyPockets.includes(delKey)) {
+        p.emptyPockets = p.emptyPockets.filter(k => k !== delKey);
+        renderBinder();
+        setStatus('Intentional empty removed');
+      }
+      e.preventDefault();
+    }
+    return;
+  }
+
   if (!img) return;
   const step = e.shiftKey ? 10 : 1;
   let handled = true;
@@ -1809,7 +1826,6 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowRight') img.xMm += step;
   else if (e.key === 'ArrowUp') img.yMm -= step;
   else if (e.key === 'ArrowDown') img.yMm += step;
-  else if (e.key === 'Delete') { removeImage(); return; }
   else handled = false;
   if (handled) {
     e.preventDefault();
