@@ -857,6 +857,57 @@ function duplicateToNeighbor(dir) {
   setStatus('Duplicated ' + dir);
 }
 
+// ============================================================
+// IMAGE DOWNSCALING
+// ============================================================
+function updateImageQuality() {
+  state.imageMaxDim = parseInt(document.getElementById('image-quality').value) || 0;
+  setStatus('Image quality: ' + (state.imageMaxDim === 0 ? 'Original' : state.imageMaxDim + ' px max'));
+}
+
+function loadAndProcessImage(file, callback) {
+  const maxDim = state.imageMaxDim || 0;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    // If no downscale requested, use original directly
+    if (maxDim === 0) {
+      callback(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const longest = Math.max(img.width, img.height);
+      // Already small enough, skip downscale
+      if (longest <= maxDim) {
+        callback(dataUrl);
+        return;
+      }
+      const ratio = maxDim / longest;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Preserve PNG for transparency, JPEG for photos
+      const isPng = file.type === 'image/png';
+      const outType = isPng ? 'image/png' : 'image/jpeg';
+      const quality = isPng ? undefined : 0.92;
+      const scaledUrl = canvas.toDataURL(outType, quality);
+      const originalKB = Math.round(dataUrl.length / 1024);
+      const scaledKB = Math.round(scaledUrl.length / 1024);
+      setStatus('Image downscaled: ' + img.width + '×' + img.height +
+                ' → ' + canvas.width + '×' + canvas.height +
+                ' (' + originalKB + ' KB → ' + scaledKB + ' KB)');
+      callback(scaledUrl);
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
 function handleDrop(e, row, col) {
   const files = e.dataTransfer.files;
   if (files.length === 0) return;
@@ -890,11 +941,10 @@ function handleDrop(e, row, col) {
     sh = parseInt(document.getElementById('slot-h').value);
     if (!isAreaFree(row, col, sw, sh, null)) { sw = 1; sh = 1; }
   }
-  const reader = new FileReader();
-  reader.onload = (ev) => {
+    loadAndProcessImage(file, (dataUrl) => {
     const key = targetRow + ',' + targetCol;
     currentPage().images[key] = {
-      src: ev.target.result,
+      src: dataUrl,
       widthMm: 100,
       xMm: 0,
       yMm: 0,
@@ -904,9 +954,7 @@ function handleDrop(e, row, col) {
     };
     autoFitImage(targetRow, targetCol);
     state.selectedSlot = { row: targetRow, col: targetCol };
-    setStatus('Image added at R' + (targetRow + 1) + 'C' + (targetCol + 1) + ' (' + sw + 'x' + sh + ')');
-  };
-  reader.readAsDataURL(file);
+  });
 }
 
 function autoFitImage(row, col) {
@@ -1046,6 +1094,7 @@ function loadProject(event) {
       // Backwards compatibility for cornerMode
       if (state.cornerMode === undefined) state.cornerMode = 'none';
       if (state.cornerRadius === undefined) state.cornerRadius = 3.18;
+      if (state.imageMaxDim === undefined) state.imageMaxDim = 3000;
       state.pages.forEach(page => {
         for (const key in page.images) {
           const img = page.images[key];
@@ -1066,6 +1115,7 @@ function loadProject(event) {
       loadPageToUI();
       document.getElementById('corner-mode').value = state.cornerMode;
       document.getElementById('corner-radius').value = state.cornerRadius;
+      document.getElementById('image-quality').value = state.imageMaxDim;
       updateCorners();
       renderPagesList();
       renderBinder();
@@ -1102,12 +1152,14 @@ function newProject() {
     viewScale: 3,
     clipboard: null,
     cornerMode: 'none',
-    cornerRadius: 3
+    cornerRadius: 3.18,
+    imageMaxDim: 3000 
   };
   loadPageToUI();
   document.getElementById('corner-mode').value = 'none';
   document.getElementById('corner-radius').value = 3.18;
   updateCorners();
+  document.getElementById('image-quality').value = '3000';
   renderPagesList();
   renderBinder();
   updatePhysicalInfo();

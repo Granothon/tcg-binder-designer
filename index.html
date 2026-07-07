@@ -84,6 +84,25 @@
       Preview shows rounded corners and they carry over to print. No corner cutter tool needed.
     </div>
   </div>
+
+  <h2 class="mt-20">Image quality</h2>
+  <div class="subsection">
+    <div class="field">
+      <label>Downscale on upload</label>
+      <select id="image-quality" onchange="updateImageQuality()">
+        <option value="3000" selected>Balanced (3000 px)</option>
+        <option value="2000">Small (2000 px)</option>
+        <option value="4000">High (4000 px)</option>
+        <option value="0">Original (no downscale)</option>
+      </select>
+    </div>
+    <div class="info">
+      Large images are downscaled when uploaded to keep the app fast.
+      3000 px is enough for 300 DPI print quality on full 3×3 spreads.
+      Choose "Original" to keep full resolution (uses more memory).
+    </div>
+  </div>
+
 </div>
 
 <div id="canvas-area"><div id="binder-canvas"></div></div>
