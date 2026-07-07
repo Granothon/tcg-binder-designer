@@ -33,7 +33,8 @@ function createEmptyPage() {
     seamV: 2,
     seamsH: ['cut', 'continuous'],
     seamsV: ['cut', 'cut'],
-    images: {}
+    images: {},
+    emptyPockets: []  // Array of "row,col" strings for intentionally empty pockets
   };
 }
 
@@ -447,10 +448,17 @@ function renderBinder() {
         }
         renderPocketImagePart(pocket, slot.image, slot.row, slot.col, row, col);
       } else {
-        const idx = document.createElement('div');
-        idx.className = 'pocket-index';
-        idx.textContent = 'R' + (row + 1) + 'C' + (col + 1);
-        pocket.appendChild(idx);
+        // Check if this pocket is intentionally empty
+        const emptyKey = row + ',' + col;
+        const isIntentionalEmpty = p.emptyPockets && p.emptyPockets.includes(emptyKey);
+        if (isIntentionalEmpty) {
+          pocket.classList.add('intentional-empty');
+        } else {
+          const idx = document.createElement('div');
+          idx.className = 'pocket-index';
+          idx.textContent = 'R' + (row + 1) + 'C' + (col + 1);
+          pocket.appendChild(idx);
+        }
       }
 
       if (state.selectedSlot && !slot &&
@@ -730,13 +738,16 @@ function updateProperties() {
     document.getElementById('img-rotate').value = img.rotate;
   } else {
     let extra = '';
+    const isIntentionalEmpty = p.emptyPockets && p.emptyPockets.includes(key);
     if (state.rangeSelection) {
       const rs = state.rangeSelection;
       const w = rs.endCol - rs.startCol + 1;
       const h = rs.endRow - rs.startRow + 1;
-      extra = '<div style="font-size:11px;color:#FFB000;margin-top:4px">Area selected: ' + w + 'x' + h + '. Drop image or paste crop.</div>';
+      extra = '<div style="font-size:11px;color:#FFB000;margin-top:4px">Area selected: ' + w + 'x' + h + '. Drop image, paste crop, or press E to mark as empty.</div>';
+    } else if (isIntentionalEmpty) {
+      extra = '<div style="font-size:11px;color:#FFB000;margin-top:4px">Intentionally empty. Press E to unmark, or drop an image to fill.</div>';
     } else {
-      extra = '<div style="font-size:11px;color:#888;margin-top:4px">Set slot size and drop image</div>';
+      extra = '<div style="font-size:11px;color:#888;margin-top:4px">Set slot size and drop image, or press E to mark as intentionally empty.</div>';
     }
     props.innerHTML = '<div style="font-size:13px">Empty: R' + (row + 1) + 'C' + (col + 1) + '</div>' + extra;
     imgSection.classList.add('hidden');
@@ -820,6 +831,56 @@ function removeImage() {
   setStatus('Image removed');
 }
 
+// ============================================================
+// INTENTIONAL EMPTY POCKET (Michi Method)
+// ============================================================
+function toggleIntentionalEmpty() {
+  if (!state.selectedSlot) return;
+  const { row, col } = state.selectedSlot;
+  const p = currentPage();
+  if (!p.emptyPockets) p.emptyPockets = [];
+
+  // Cannot mark a pocket that has an image
+  if (findSlotAt(row, col)) {
+    setStatus('Remove image first to mark as empty');
+    return;
+  }
+
+  // If range selected, toggle all pockets in the range
+  if (state.rangeSelection) {
+    const rs = state.rangeSelection;
+    const keys = [];
+    for (let r = rs.startRow; r <= rs.endRow; r++) {
+      for (let c = rs.startCol; c <= rs.endCol; c++) {
+        if (!findSlotAt(r, c)) keys.push(r + ',' + c);
+      }
+    }
+    const allMarked = keys.every(k => p.emptyPockets.includes(k));
+    if (allMarked) {
+      p.emptyPockets = p.emptyPockets.filter(k => !keys.includes(k));
+      setStatus('Unmarked ' + keys.length + ' pockets');
+    } else {
+      keys.forEach(k => { if (!p.emptyPockets.includes(k)) p.emptyPockets.push(k); });
+      setStatus('Marked ' + keys.length + ' pockets as intentionally empty');
+    }
+    state.rangeSelection = null;
+    renderBinder();
+    return;
+  }
+
+  // Single pocket toggle
+  const key = row + ',' + col;
+  const idx = p.emptyPockets.indexOf(key);
+  if (idx >= 0) {
+    p.emptyPockets.splice(idx, 1);
+    setStatus('Pocket R' + (row + 1) + 'C' + (col + 1) + ' unmarked');
+  } else {
+    p.emptyPockets.push(key);
+    setStatus('Pocket R' + (row + 1) + 'C' + (col + 1) + ' marked as intentionally empty');
+  }
+  renderBinder();
+}
+
 function copyImageSettings() {
   if (!state.selectedSlot) return;
   const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
@@ -868,6 +929,16 @@ function pasteImageSettings() {
     slotH: sh
   };
   clampImage(p.images[key]);
+  // Remove intentional-empty markings covered by this paste
+  if (p.emptyPockets && p.emptyPockets.length > 0) {
+    for (let r = row; r < row + sh; r++) {
+      for (let c = col; c < col + sw; c++) {
+        const ek = r + ',' + c;
+        const idx = p.emptyPockets.indexOf(ek);
+        if (idx >= 0) p.emptyPockets.splice(idx, 1);
+      }
+    }
+  }
   state.rangeSelection = null;
   renderBinder();
   setStatus('Crop pasted (' + cb.widthMm.toFixed(1) + ' mm)');
@@ -905,6 +976,16 @@ function duplicateToNeighbor(dir) {
     slotH: sh
   };
   clampImage(p.images[newKey]);
+  // Remove intentional-empty markings covered by the duplicate
+  if (p.emptyPockets && p.emptyPockets.length > 0) {
+    for (let r = newRow; r < newRow + sh; r++) {
+      for (let c = newCol; c < newCol + sw; c++) {
+        const ek = r + ',' + c;
+        const idx = p.emptyPockets.indexOf(ek);
+        if (idx >= 0) p.emptyPockets.splice(idx, 1);
+      }
+    }
+  }
   state.selectedSlot = { row: newRow, col: newCol };
   renderBinder();
   setStatus('Duplicated ' + dir);
@@ -946,7 +1027,8 @@ function handleDrop(e, row, col) {
 
   loadAndProcessImage(file, (dataUrl) => {
     const key = targetRow + ',' + targetCol;
-    currentPage().images[key] = {
+    const p = currentPage();
+    p.images[key] = {
       src: dataUrl,
       widthMm: 100,
       xMm: 0,
@@ -955,6 +1037,16 @@ function handleDrop(e, row, col) {
       slotW: sw,
       slotH: sh
     };
+    // Remove intentional-empty markings for all pockets covered by this slot
+    if (p.emptyPockets && p.emptyPockets.length > 0) {
+      for (let r = targetRow; r < targetRow + sh; r++) {
+        for (let c = targetCol; c < targetCol + sw; c++) {
+          const emptyKey = r + ',' + c;
+          const idx = p.emptyPockets.indexOf(emptyKey);
+          if (idx >= 0) p.emptyPockets.splice(idx, 1);
+        }
+      }
+    }
     autoFitImage(targetRow, targetCol);
     state.selectedSlot = { row: targetRow, col: targetCol };
   });
@@ -988,7 +1080,6 @@ function autoFitImage(row, col) {
   };
   tempImg.src = d.src;
 }
-
 // ============================================================
 // PAGES MANAGEMENT
 // ============================================================
@@ -1099,6 +1190,7 @@ function loadProject(event) {
       if (state.cornerRadius === undefined) state.cornerRadius = 3.18;
       if (state.imageMaxDim === undefined) state.imageMaxDim = 3000;
       state.pages.forEach(page => {
+        if (!page.emptyPockets) page.emptyPockets = [];
         for (const key in page.images) {
           const img = page.images[key];
           if (!img.slotW) img.slotW = 1;
@@ -1353,6 +1445,10 @@ function updatePrintFit() {
     confirmBtn.disabled = true;
     return;
   }
+
+  // Calculate effective DPI per image and find the worst
+  const dpiWarnings = calculateDpiWarnings();
+
   const sheetCount = result.sheets.length;
   const pieceCount = pieces.length;
   const rotatedCount = result.sheets.reduce((sum, sheet) =>
@@ -1371,31 +1467,115 @@ function updatePrintFit() {
     msg += '<br><span style="font-size:11px;color:#888">Corners rounded: ' +
            state.cornerRadius + ' mm on ' + modeText + '</span>';
   }
+
+  // Append DPI quality summary
+  if (dpiWarnings.summary) {
+    msg += '<br><br>' + dpiWarnings.summary;
+  }
+
   resultEl.innerHTML = msg;
+  // Downgrade the color if there are DPI warnings
+  if (dpiWarnings.level === 'bad') {
+    resultEl.className = 'fit-result fit-bad';
+  } else if (dpiWarnings.level === 'warn') {
+    resultEl.className = 'fit-result fit-warn';
+  }
   confirmBtn.disabled = false;
   window._printResult = result;
   window._printPaper = paper;
   window._printGap = gapMm;
 }
 
-function confirmPrint() {
-  const paper = window._printPaper;
-  const result = window._printResult;
-  const gapMm = window._printGap;
-  if (!paper || !result) {
-    updatePrintFit();
-    return;
+function calculateDpiWarnings() {
+  const MM_PER_INCH = 25.4;
+  const items = [];
+  state.pages.forEach((page, pageIdx) => {
+    for (const key in page.images) {
+      const [srow, scol] = key.split(',').map(Number);
+      const img = page.images[key];
+      const sw = img.slotW || 1;
+      const sh = img.slotH || 1;
+
+      // Physical slot size in mm
+      const slotW_mm = sw * page.pocketW + (sw - 1) * page.seamH;
+      const slotH_mm = sh * page.pocketH + (sh - 1) * page.seamV;
+
+      // The image covers slot width (widthMm). Compute the visible pixel density
+      // The image natural size is not directly stored, but we know:
+      // - image is displayed at widthMm mm wide
+      // - _naturalRatio tells its width/height ratio
+      // We need to know the natural pixel width. Read it from a temp image if not cached.
+      const naturalPx = img._naturalPxWidth;
+      if (!naturalPx) {
+        // Trigger async measurement, use fallback for now
+        cacheNaturalPixels(img);
+        continue;
+      }
+
+      // How many source pixels cover the slot?
+      // The image is scaled so widthMm mm equals naturalPx pixels.
+      // Slot width is slotW_mm. So visible px width = naturalPx * (slotW_mm / widthMm)
+      const visiblePxW = naturalPx * (slotW_mm / img.widthMm);
+      const slotW_inch = slotW_mm / MM_PER_INCH;
+      const dpi = Math.round(visiblePxW / slotW_inch);
+      items.push({
+        pageIdx: pageIdx,
+        label: 'P' + (pageIdx + 1) + ' R' + (srow + 1) + 'C' + (scol + 1),
+        dpi: dpi
+      });
+    }
+  });
+
+  if (items.length === 0) return { summary: null, level: 'ok' };
+
+  const minDpi = Math.min(...items.map(i => i.dpi));
+  const worst = items.find(i => i.dpi === minDpi);
+
+  let level = 'ok';
+  let color = '#47E6C1';
+  let icon = '✓';
+  let label = 'Excellent print quality';
+  if (minDpi < 150) {
+    level = 'bad';
+    color = '#F43256';
+    icon = '⚠';
+    label = 'Low print quality';
+  } else if (minDpi < 250) {
+    level = 'warn';
+    color = '#FFB000';
+    icon = '⚠';
+    label = 'Acceptable print quality';
   }
-  const styleEl = document.createElement('style');
-  styleEl.id = 'dynamic-print-style';
-  styleEl.textContent = '@page { size: ' + paper.size + ' ' + paper.orient + '; margin: ' + paper.margin + 'mm; }';
-  const oldStyle = document.getElementById('dynamic-print-style');
-  if (oldStyle) oldStyle.remove();
-  document.head.appendChild(styleEl);
-  closePrintDialog();
-  preparePrint(result, paper, gapMm);
+
+  let summary = '<b style="color:' + color + '">' + icon + ' ' + label + '</b>';
+  summary += '<br><span style="font-size:11px;color:#888">Lowest effective resolution: ' +
+             minDpi + ' DPI (' + worst.label + ')';
+  if (level === 'warn') {
+    summary += '<br>Print will look decent but not razor-sharp. Consider a higher-resolution source image.';
+  } else if (level === 'bad') {
+    summary += '<br>Image will look soft or pixelated. Find a higher-resolution version of this image.';
+  }
+  summary += '</span>';
+  return { summary: summary, level: level };
 }
 
+// Cache natural pixel dimensions of an image for DPI calculations
+function cacheNaturalPixels(img) {
+  if (img._pxMeasureInProgress) return;
+  img._pxMeasureInProgress = true;
+  const t = new Image();
+  t.onload = () => {
+    img._naturalPxWidth = t.width;
+    img._naturalPxHeight = t.height;
+    img._pxMeasureInProgress = false;
+    // Re-run print fit if the print dialog is open
+    const modal = document.getElementById('print-modal');
+    if (modal && modal.classList.contains('open')) {
+      updatePrintFit();
+    }
+  };
+  t.src = img.src;
+}
 function preparePrint(packResult, paper, gapMm) {
   const canvasArea = document.getElementById('canvas-area');
   const MM_TO_PX = 96 / 25.4;
@@ -1513,7 +1693,6 @@ function renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX) {
     }
   }
 }
-
 // ============================================================
 // ABOUT DIALOG
 // ============================================================
@@ -1550,12 +1729,9 @@ function updatePhysicalInfo() {
 // EVENT HANDLERS
 // ============================================================
 document.addEventListener('wheel', (e) => {
-  // Only handle wheel events inside the canvas area
   const inCanvasArea = e.target.closest('#canvas-area');
   if (!inCanvasArea) return;
 
-  // If a slot with an image is selected AND the wheel is over that slot,
-  // zoom the image inside the slot
   if (state.selectedSlot) {
     const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
     const img = currentPage().images[key];
@@ -1579,8 +1755,6 @@ document.addEventListener('wheel', (e) => {
     }
   }
 
-  // Otherwise: zoom the whole view (page zoom)
-  // Skip if Ctrl/Cmd is held (browser zoom)
   if (e.ctrlKey || e.metaKey) return;
   e.preventDefault();
   const deltaPercent = e.deltaY > 0 ? -10 : 10;
@@ -1600,14 +1774,12 @@ document.addEventListener('keydown', (e) => {
     if (state.selectedSlot) { pasteImageSettings(); e.preventDefault(); }
     return;
   }
-
   if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
     resetZoom();
     e.preventDefault();
     return;
   }
 
-  // + and - work even without a selected image: zoom the whole view
   if (e.key === '+' || e.key === '=') {
     if (img) zoomImage(3);
     else zoomView(10);
@@ -1618,6 +1790,15 @@ document.addEventListener('keydown', (e) => {
     if (img) zoomImage(-3);
     else zoomView(-10);
     e.preventDefault();
+    return;
+  }
+
+  // E: toggle intentional empty (Michi Method)
+  if (e.key === 'e' || e.key === 'E') {
+    if (state.selectedSlot) {
+      toggleIntentionalEmpty();
+      e.preventDefault();
+    }
     return;
   }
 
