@@ -16,7 +16,7 @@ let state = {
   viewScale: 3,
   clipboard: null,
   cornerMode: 'none',       // 'none' | 'outer' | 'every'
-  cornerRadius: 3           // mm
+  cornerRadius: 3.18           // mm
 };
 
 let rangeSelecting = null;
@@ -127,7 +127,7 @@ function clampImage(imgData) {
 // ============================================================
 function updateCorners() {
   state.cornerMode = document.getElementById('corner-mode').value;
-  state.cornerRadius = parseFloat(document.getElementById('corner-radius').value) || 3;
+  state.cornerRadius = parseFloat(document.getElementById('corner-radius').value) || 3.18;
   
   // Show/hide radius field based on mode
   const radiusField = document.getElementById('corner-radius-field');
@@ -1106,7 +1106,7 @@ function newProject() {
   };
   loadPageToUI();
   document.getElementById('corner-mode').value = 'none';
-  document.getElementById('corner-radius').value = 3;
+  document.getElementById('corner-radius').value = 3.18;
   updateCorners();
   renderPagesList();
   renderBinder();

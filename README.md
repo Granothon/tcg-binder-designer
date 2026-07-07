@@ -11,7 +11,6 @@ Michify makes it easy to design and print binder art without manual measuring or
 Unlike collection management apps that focus on tracking cards, Michify is a **precision printing tool**: it produces printable images that fit your binder pockets exactly.
 
 ## Features
-
 - **Custom binder dimensions**: Set exact pocket width, height, and seam sizes for your specific binder
 - **Multi-pocket image slots**: Design artwork spanning multiple pockets in any rectangular configuration
 - **Michi Method support**: Handle cut and continuous seams (side-loading binders where pockets face each other)
@@ -20,13 +19,12 @@ Unlike collection management apps that focus on tracking cards, Michify is a **p
 - **Clone and duplicate**: Copy image crops between slots, extend images seamlessly to neighboring slots
 - **Multi-page projects**: Design a whole binder in one session, save as JSON for later editing
 - **Size Guide reference**: See all possible slot dimensions calculated from your binder measurements
-- **Rounded corners**: Optional preview and print output with rounded corners in two styles (outer edges only or every card). Works as visual cutting guides even on non-white paper.
+- **Rounded corners**: Optional preview and print output with rounded corners in two styles (outer edges only or every card). Default radius matches the official TCG card standard. Works as visual cutting guides even on non-white paper.
 - **Locked panning**: Images can't create empty white space, only zoom and crop within the slot
 - **Smart bin-packing printing**: Automatically arranges pieces on A4/A3 sheets with proper cutting margins
 - **A4 and A3 printing**: Portrait or landscape orientation with automatic fit checking
 
 ## How to use
-
 1. Open the [live app](https://granothon.github.io/tcg-binder-designer/) in your browser
 2. Measure your binder's actual pocket dimensions with a ruler
 3. Enter the measurements in the sidebar (pocket width, height, seam sizes)
@@ -59,8 +57,9 @@ Michify offers three corner styles to match your aesthetic preference and availa
 
 **Round every card**: Each individual pocket gets its own set of rounded corners. Multi-pocket spanning artwork shows rounded corners at every pocket boundary, making the layout look like separate cards placed next to each other.
 
-The rounded corner effect works two ways during printing:
+**About the corner radius**: The default value is 3.18 mm which matches the official TCG card corner radius exactly (1/8 inch = 3.175 mm). This makes printed inserts visually indistinguishable from real cards when placed side by side. Adjust the radius if your specific card game uses different dimensions or if you prefer a different aesthetic.
 
+The rounded corner effect works two ways during printing:
 - **On white paper**: The rounded corners blend perfectly with the paper, giving the visual appearance of pre-cut rounded cards
 - **On any paper color**: The rounded areas serve as cutting guides. Cut straight along the edges and the "corners" define where your card's rounded shape ends. No corner cutter tool needed either way.
 
@@ -73,7 +72,6 @@ For seams, measure the visible gap between two adjacent pocket openings when car
 ## Printing tips
 
 Michify handles the complex parts of printing automatically:
-
 - **Bin packing**: Multiple images are arranged efficiently on each A4 or A3 sheet, rotating pieces when needed to save paper
 - **Cutting margins**: The gap between printed pieces matches your binder's seam width, so you can cut straight lines with a paper cutter
 - **Corner rounding**: Enable rounded corners in the sidebar to add professional-looking rounded corners automatically. Works as both visual style and cutting guide.
@@ -128,6 +126,5 @@ Copyright © 2026 Risto Ruuskanen
 ## Author
 
 Created and maintained by Risto Ruuskanen.
-
 - GitHub: [@granothon](https://github.com/granothon)
 - Ko-fi: [ko-fi.com/granothon](https://ko-fi.com/granothon)
