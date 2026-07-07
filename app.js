@@ -1045,7 +1045,7 @@ function loadProject(event) {
       state.currentPage = Math.min(state.currentPage || 0, state.pages.length - 1);
       // Backwards compatibility for cornerMode
       if (state.cornerMode === undefined) state.cornerMode = 'none';
-      if (state.cornerRadius === undefined) state.cornerRadius = 3;
+      if (state.cornerRadius === undefined) state.cornerRadius = 3.18;
       state.pages.forEach(page => {
         for (const key in page.images) {
           const img = page.images[key];
