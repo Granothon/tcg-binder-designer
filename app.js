@@ -1,8 +1,8 @@
 /*
-  Michify - TCG Binder Designer
-  Application logic
-  Copyright (c) 2026 Risto Ruuskanen
-  Licensed under the MIT License
+   Michify - TCG Binder Designer
+   Application logic
+   Copyright (c) 2026 Risto Ruuskanen
+   Licensed under the MIT License
 */
 
 // ============================================================
@@ -15,8 +15,9 @@ let state = {
   rangeSelection: null,
   viewScale: 3,
   clipboard: null,
-  cornerMode: 'none',       // 'none' | 'outer' | 'every'
-  cornerRadius: 3.18           // mm
+  cornerMode: 'none',    // 'none' | 'outer' | 'every'
+  cornerRadius: 3.18,    // mm
+  imageMaxDim: 3000      // max pixels on longest side, 0 = original
 };
 
 let rangeSelecting = null;
@@ -36,9 +37,7 @@ function createEmptyPage() {
   };
 }
 
-function currentPage() {
-  return state.pages[state.currentPage];
-}
+function currentPage() { return state.pages[state.currentPage]; }
 
 // ============================================================
 // SLOT LOGIC
@@ -78,9 +77,7 @@ function slotSizeMm(sw, sh) {
   };
 }
 
-function mmToPx(mm) {
-  return mm * state.viewScale;
-}
+function mmToPx(mm) { return mm * state.viewScale; }
 
 function pocketPos(row, col) {
   const p = currentPage();
@@ -128,31 +125,23 @@ function clampImage(imgData) {
 function updateCorners() {
   state.cornerMode = document.getElementById('corner-mode').value;
   state.cornerRadius = parseFloat(document.getElementById('corner-radius').value) || 3.18;
-  
-  // Show/hide radius field based on mode
   const radiusField = document.getElementById('corner-radius-field');
   if (state.cornerMode === 'none') {
     radiusField.classList.add('hidden');
   } else {
     radiusField.classList.remove('hidden');
   }
-  
   renderBinder();
 }
 
-// Collect image "pieces" - contiguous rectangles bounded by cut seams
-// This is used for corner rounding in 'outer' mode
 function collectImagePieces(pageParam) {
   const page = pageParam || currentPage();
   const pieces = [];
-  
   for (const key in page.images) {
     const [srow, scol] = key.split(',').map(Number);
     const img = page.images[key];
     const sw = img.slotW || 1;
     const sh = img.slotH || 1;
-
-    // Split by cut seams horizontally
     const colGroups = [];
     let currentGroup = [scol];
     for (let c = scol; c < scol + sw - 1; c++) {
@@ -164,8 +153,6 @@ function collectImagePieces(pageParam) {
       }
     }
     colGroups.push(currentGroup);
-
-    // Split by cut seams vertically
     const rowGroups = [];
     let currentRowGroup = [srow];
     for (let r = srow; r < srow + sh - 1; r++) {
@@ -177,20 +164,17 @@ function collectImagePieces(pageParam) {
       }
     }
     rowGroups.push(currentRowGroup);
-
     rowGroups.forEach(rowGroup => {
       colGroups.forEach(colGroup => {
         const firstCol = colGroup[0];
         const lastCol = colGroup[colGroup.length - 1];
         const firstRow = rowGroup[0];
         const lastRow = rowGroup[rowGroup.length - 1];
-        
         pieces.push({
           slotKey: key,
           slotOriginRow: srow,
           slotOriginCol: scol,
-          firstRow, lastRow,
-          firstCol, lastCol,
+          firstRow, lastRow, firstCol, lastCol,
           image: img
         });
       });
@@ -199,22 +183,17 @@ function collectImagePieces(pageParam) {
   return pieces;
 }
 
-// Render corner overlays for pieces (outer mode) or pockets (every mode)
 function renderCornerOverlays(canvas) {
   if (state.cornerMode === 'none') return;
-  
   const page = currentPage();
   const radiusMm = state.cornerRadius;
   const radiusPx = mmToPx(radiusMm);
-  
   if (state.cornerMode === 'every') {
-    // Round every pocket that has an image
     for (const key in page.images) {
       const [srow, scol] = key.split(',').map(Number);
       const img = page.images[key];
       const sw = img.slotW || 1;
       const sh = img.slotH || 1;
-      
       for (let r = srow; r < srow + sh; r++) {
         for (let c = scol; c < scol + sw; c++) {
           const pos = pocketPos(r, c);
@@ -223,7 +202,6 @@ function renderCornerOverlays(canvas) {
       }
     }
   } else if (state.cornerMode === 'outer') {
-    // Round only the outer corners of each piece
     const pieces = collectImagePieces(page);
     pieces.forEach(piece => {
       const startPos = pocketPos(piece.firstRow, piece.firstCol);
@@ -237,7 +215,6 @@ function renderCornerOverlays(canvas) {
   }
 }
 
-// Add 4 corner overlay elements at the corners of a rectangle
 function addCornerOverlays(canvas, x, y, w, h, radiusPx) {
   const corners = [
     { cls: 'tl', dx: 0, dy: 0 },
@@ -245,7 +222,6 @@ function addCornerOverlays(canvas, x, y, w, h, radiusPx) {
     { cls: 'bl', dx: 0, dy: h - radiusPx },
     { cls: 'br', dx: w - radiusPx, dy: h - radiusPx }
   ];
-  
   corners.forEach(corner => {
     const overlay = document.createElement('div');
     overlay.className = 'corner-overlay ' + corner.cls;
@@ -273,6 +249,11 @@ function updateBinder() {
   while (p.seamsV.length < p.rows - 1) p.seamsV.push('cut');
   while (p.seamsV.length > p.rows - 1) p.seamsV.pop();
   state.viewScale = parseInt(document.getElementById('view-scale').value) / 100 * 3;
+  // Update Office-style zoom percentage label
+  const zoomValueEl = document.getElementById('zoom-value');
+  if (zoomValueEl) {
+    zoomValueEl.textContent = document.getElementById('view-scale').value + '%';
+  }
   renderBinder();
   renderPagesList();
   updatePhysicalInfo();
@@ -291,18 +272,84 @@ function updateClipboardIndicator() {
 }
 
 // ============================================================
+// VIEW ZOOM (Office-style slider)
+// ============================================================
+function zoomView(deltaPercent) {
+  const input = document.getElementById('view-scale');
+  const currentValue = parseInt(input.value) || 100;
+  const minVal = parseInt(input.min) || 30;
+  const maxVal = parseInt(input.max) || 500;
+  const newValue = Math.max(minVal, Math.min(maxVal, currentValue + deltaPercent));
+  if (newValue === currentValue) return;
+  input.value = newValue;
+  updateBinder();
+  setStatus('Zoom: ' + newValue + '%');
+}
+
+function resetZoom() {
+  const input = document.getElementById('view-scale');
+  input.value = 100;
+  updateBinder();
+  setStatus('Zoom: 100% (reset)');
+}
+
+// ============================================================
+// IMAGE QUALITY / DOWNSCALING
+// ============================================================
+function updateImageQuality() {
+  state.imageMaxDim = parseInt(document.getElementById('image-quality').value) || 0;
+  setStatus('Image quality: ' + (state.imageMaxDim === 0 ? 'Original' : state.imageMaxDim + ' px max'));
+}
+
+function loadAndProcessImage(file, callback) {
+  const maxDim = state.imageMaxDim || 0;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    if (maxDim === 0) {
+      callback(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const longest = Math.max(img.width, img.height);
+      if (longest <= maxDim) {
+        callback(dataUrl);
+        return;
+      }
+      const ratio = maxDim / longest;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const isPng = file.type === 'image/png';
+      const outType = isPng ? 'image/png' : 'image/jpeg';
+      const quality = isPng ? undefined : 0.92;
+      const scaledUrl = canvas.toDataURL(outType, quality);
+      const originalKB = Math.round(dataUrl.length / 1024);
+      const scaledKB = Math.round(scaledUrl.length / 1024);
+      setStatus('Image downscaled: ' + img.width + '×' + img.height +
+                ' → ' + canvas.width + '×' + canvas.height +
+                ' (' + originalKB + ' KB → ' + scaledKB + ' KB)');
+      callback(scaledUrl);
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 function renderPocketImagePart(pocketEl, imgData, slotOriginRow, slotOriginCol, pocketRow, pocketCol) {
   const p = currentPage();
   let offsetX_mm = 0;
   let offsetY_mm = 0;
-  for (let c = slotOriginCol; c < pocketCol; c++) {
-    offsetX_mm += p.pocketW + p.seamH;
-  }
-  for (let r = slotOriginRow; r < pocketRow; r++) {
-    offsetY_mm += p.pocketH + p.seamV;
-  }
+  for (let c = slotOriginCol; c < pocketCol; c++) { offsetX_mm += p.pocketW + p.seamH; }
+  for (let r = slotOriginRow; r < pocketRow; r++) { offsetY_mm += p.pocketH + p.seamV; }
   const imgEl = document.createElement('img');
   imgEl.src = imgData.src;
   imgEl.style.width = mmToPx(imgData.widthMm) + 'px';
@@ -332,9 +379,7 @@ function renderContinuousSeamBridge(canvas, imgData, slotOriginRow, slotOriginCo
       if (c < seamCol) offsetX_mm += p.seamH;
     }
     let offsetY_mm = 0;
-    for (let r = slotOriginRow; r < seamRow; r++) {
-      offsetY_mm += p.pocketH + p.seamV;
-    }
+    for (let r = slotOriginRow; r < seamRow; r++) { offsetY_mm += p.pocketH + p.seamV; }
     const imgEl = document.createElement('img');
     imgEl.src = imgData.src;
     imgEl.style.width = mmToPx(imgData.widthMm) + 'px';
@@ -352,9 +397,7 @@ function renderContinuousSeamBridge(canvas, imgData, slotOriginRow, slotOriginCo
     bridge.style.width = mmToPx(p.pocketW) + 'px';
     bridge.style.height = mmToPx(p.seamV) + 'px';
     let offsetX_mm = 0;
-    for (let c = slotOriginCol; c < seamCol; c++) {
-      offsetX_mm += p.pocketW + p.seamH;
-    }
+    for (let c = slotOriginCol; c < seamCol; c++) { offsetX_mm += p.pocketW + p.seamH; }
     let offsetY_mm = 0;
     for (let r = slotOriginRow; r <= seamRow; r++) {
       offsetY_mm += p.pocketH;
@@ -395,6 +438,7 @@ function renderBinder() {
       pocket.style.height = pos.h + 'px';
       pocket.dataset.row = row;
       pocket.dataset.col = col;
+
       const slot = findSlotAt(row, col);
       if (slot) {
         pocket.classList.add('has-image');
@@ -408,15 +452,19 @@ function renderBinder() {
         idx.textContent = 'R' + (row + 1) + 'C' + (col + 1);
         pocket.appendChild(idx);
       }
-      if (state.selectedSlot && !slot && state.selectedSlot.row === row && state.selectedSlot.col === col) {
+
+      if (state.selectedSlot && !slot &&
+          state.selectedSlot.row === row && state.selectedSlot.col === col) {
         pocket.classList.add('selected');
       }
       if (state.rangeSelection) {
         const rs = state.rangeSelection;
-        if (row >= rs.startRow && row <= rs.endRow && col >= rs.startCol && col <= rs.endCol) {
+        if (row >= rs.startRow && row <= rs.endRow &&
+            col >= rs.startCol && col <= rs.endCol) {
           pocket.classList.add('range-selected');
         }
       }
+
       pocket.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         if (e.shiftKey && state.selectedSlot) {
@@ -432,6 +480,7 @@ function renderBinder() {
           rangeSelecting = { startRow: row, startCol: col, currentRow: row, currentCol: col };
         }
       });
+
       pocket.addEventListener('mouseenter', () => {
         if (rangeSelecting) {
           rangeSelecting.currentRow = row;
@@ -439,6 +488,7 @@ function renderBinder() {
           updateRangeSelectionPreview();
         }
       });
+
       pocket.addEventListener('click', (e) => {
         if (dragging) return;
         if (e.shiftKey) return;
@@ -447,6 +497,7 @@ function renderBinder() {
           else selectAt(row, col);
         }
       });
+
       pocket.addEventListener('dragover', (e) => {
         e.preventDefault();
         pocket.classList.add('drag-over');
@@ -457,6 +508,7 @@ function renderBinder() {
         pocket.classList.remove('drag-over');
         handleDrop(e, row, col);
       });
+
       canvas.appendChild(pocket);
     }
   }
@@ -543,7 +595,7 @@ function renderBinder() {
     }
   }
 
-  // Seam toggle buttons
+  // Seam toggle buttons (horizontal)
   for (let row = 0; row < p.rows; row++) {
     for (let s = 0; s < p.cols - 1; s++) {
       const pos = pocketPos(row, s);
@@ -561,6 +613,7 @@ function renderBinder() {
       canvas.appendChild(seam);
     }
   }
+  // Seam toggle buttons (vertical)
   for (let col = 0; col < p.cols; col++) {
     for (let s = 0; s < p.rows - 1; s++) {
       const pos = pocketPos(s, col);
@@ -578,6 +631,7 @@ function renderBinder() {
       canvas.appendChild(seam);
     }
   }
+
   updateProperties();
 }
 
@@ -664,10 +718,9 @@ function updateProperties() {
     const sw = img.slotW || 1;
     const sh = img.slotH || 1;
     const slotMm = slotSizeMm(sw, sh);
-    props.innerHTML =
-      '<div style="font-size:13px">Image: R' + (row + 1) + 'C' + (col + 1) + '</div>' +
-      '<div style="font-size:11px;color:#888;margin-top:4px">Slot: ' + sw + 'x' + sh + ' pockets = ' + slotMm.w.toFixed(1) + 'x' + slotMm.h.toFixed(1) + ' mm</div>' +
-      '<div style="font-size:11px;color:#888">Image width: ' + img.widthMm.toFixed(1) + ' mm</div>';
+    props.innerHTML = '<div style="font-size:13px">Image: R' + (row + 1) + 'C' + (col + 1) + '</div>' +
+                      '<div style="font-size:11px;color:#888;margin-top:4px">Slot: ' + sw + 'x' + sh + ' pockets = ' + slotMm.w.toFixed(1) + 'x' + slotMm.h.toFixed(1) + ' mm</div>' +
+                      '<div style="font-size:11px;color:#888">Image width: ' + img.widthMm.toFixed(1) + ' mm</div>';
     imgSection.classList.remove('hidden');
     document.getElementById('slot-w').value = sw;
     document.getElementById('slot-h').value = sh;
@@ -857,57 +910,6 @@ function duplicateToNeighbor(dir) {
   setStatus('Duplicated ' + dir);
 }
 
-// ============================================================
-// IMAGE DOWNSCALING
-// ============================================================
-function updateImageQuality() {
-  state.imageMaxDim = parseInt(document.getElementById('image-quality').value) || 0;
-  setStatus('Image quality: ' + (state.imageMaxDim === 0 ? 'Original' : state.imageMaxDim + ' px max'));
-}
-
-function loadAndProcessImage(file, callback) {
-  const maxDim = state.imageMaxDim || 0;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const dataUrl = ev.target.result;
-    // If no downscale requested, use original directly
-    if (maxDim === 0) {
-      callback(dataUrl);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      const longest = Math.max(img.width, img.height);
-      // Already small enough, skip downscale
-      if (longest <= maxDim) {
-        callback(dataUrl);
-        return;
-      }
-      const ratio = maxDim / longest;
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * ratio);
-      canvas.height = Math.round(img.height * ratio);
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      // Preserve PNG for transparency, JPEG for photos
-      const isPng = file.type === 'image/png';
-      const outType = isPng ? 'image/png' : 'image/jpeg';
-      const quality = isPng ? undefined : 0.92;
-      const scaledUrl = canvas.toDataURL(outType, quality);
-      const originalKB = Math.round(dataUrl.length / 1024);
-      const scaledKB = Math.round(scaledUrl.length / 1024);
-      setStatus('Image downscaled: ' + img.width + '×' + img.height +
-                ' → ' + canvas.width + '×' + canvas.height +
-                ' (' + originalKB + ' KB → ' + scaledKB + ' KB)');
-      callback(scaledUrl);
-    };
-    img.src = dataUrl;
-  };
-  reader.readAsDataURL(file);
-}
-
 function handleDrop(e, row, col) {
   const files = e.dataTransfer.files;
   if (files.length === 0) return;
@@ -941,7 +943,8 @@ function handleDrop(e, row, col) {
     sh = parseInt(document.getElementById('slot-h').value);
     if (!isAreaFree(row, col, sw, sh, null)) { sw = 1; sh = 1; }
   }
-    loadAndProcessImage(file, (dataUrl) => {
+
+  loadAndProcessImage(file, (dataUrl) => {
     const key = targetRow + ',' + targetCol;
     currentPage().images[key] = {
       src: dataUrl,
@@ -1091,7 +1094,7 @@ function loadProject(event) {
       state.selectedSlot = null;
       state.rangeSelection = null;
       state.currentPage = Math.min(state.currentPage || 0, state.pages.length - 1);
-      // Backwards compatibility for cornerMode
+      // Backwards compatibility
       if (state.cornerMode === undefined) state.cornerMode = 'none';
       if (state.cornerRadius === undefined) state.cornerRadius = 3.18;
       if (state.imageMaxDim === undefined) state.imageMaxDim = 3000;
@@ -1153,13 +1156,14 @@ function newProject() {
     clipboard: null,
     cornerMode: 'none',
     cornerRadius: 3.18,
-    imageMaxDim: 3000 
+    imageMaxDim: 3000
   };
   loadPageToUI();
   document.getElementById('corner-mode').value = 'none';
   document.getElementById('corner-radius').value = 3.18;
-  updateCorners();
   document.getElementById('image-quality').value = '3000';
+  document.getElementById('view-scale').value = 100;
+  updateCorners();
   renderPagesList();
   renderBinder();
   updatePhysicalInfo();
@@ -1177,7 +1181,6 @@ function collectPrintPieces() {
       const img = page.images[key];
       const sw = img.slotW || 1;
       const sh = img.slotH || 1;
-
       const colGroups = [];
       let currentGroup = [scol];
       for (let c = scol; c < scol + sw - 1; c++) {
@@ -1189,7 +1192,6 @@ function collectPrintPieces() {
         }
       }
       colGroups.push(currentGroup);
-
       const rowGroups = [];
       let currentRowGroup = [srow];
       for (let r = srow; r < srow + sh - 1; r++) {
@@ -1201,7 +1203,6 @@ function collectPrintPieces() {
         }
       }
       rowGroups.push(currentRowGroup);
-
       rowGroups.forEach(rowGroup => {
         colGroups.forEach(colGroup => {
           const firstCol = colGroup[0];
@@ -1212,16 +1213,10 @@ function collectPrintPieces() {
           const pieceH_pockets = lastRow - firstRow + 1;
           const pieceW_mm = pieceW_pockets * page.pocketW + (pieceW_pockets - 1) * page.seamH;
           const pieceH_mm = pieceH_pockets * page.pocketH + (pieceH_pockets - 1) * page.seamV;
-
           let offsetX_mm = 0;
           let offsetY_mm = 0;
-          for (let c = scol; c < firstCol; c++) {
-            offsetX_mm += page.pocketW + page.seamH;
-          }
-          for (let r = srow; r < firstRow; r++) {
-            offsetY_mm += page.pocketH + page.seamV;
-          }
-
+          for (let c = scol; c < firstCol; c++) { offsetX_mm += page.pocketW + page.seamH; }
+          for (let r = srow; r < firstRow; r++) { offsetY_mm += page.pocketH + page.seamV; }
           pieces.push({
             pageIdx: pageIdx,
             slotKey: key,
@@ -1248,14 +1243,12 @@ function collectPrintPieces() {
 function packPieces(pieces, paperW, paperH, gapMm) {
   const sheets = [];
   const sortedPieces = pieces.slice().sort((a, b) => b.heightMm - a.heightMm);
-
   for (const piece of sortedPieces) {
     let placed = false;
     const orientations = [
       { w: piece.widthMm, h: piece.heightMm, rotated: false },
       { w: piece.heightMm, h: piece.widthMm, rotated: true }
     ];
-
     for (const sheet of sheets) {
       for (const orient of orientations) {
         if (tryPlaceOnSheet(sheet, piece, orient, paperW, paperH, gapMm)) {
@@ -1265,7 +1258,6 @@ function packPieces(pieces, paperW, paperH, gapMm) {
       }
       if (placed) break;
     }
-
     if (!placed) {
       const newSheet = { shelves: [], placements: [] };
       for (const orient of orientations) {
@@ -1288,41 +1280,24 @@ function tryPlaceOnSheet(sheet, piece, orient, paperW, paperH, gapMm) {
   const w = orient.w;
   const h = orient.h;
   if (w > paperW || h > paperH) return false;
-
   for (const shelf of sheet.shelves) {
     if (h > shelf.height) continue;
     let nextX = shelf.usedWidth;
     if (shelf.usedWidth > 0) nextX += gapMm;
     if (nextX + w <= paperW) {
-      sheet.placements.push({
-        piece: piece,
-        orient: orient,
-        x: nextX,
-        y: shelf.y,
-        w: w,
-        h: h
-      });
+      sheet.placements.push({ piece: piece, orient: orient, x: nextX, y: shelf.y, w: w, h: h });
       shelf.usedWidth = nextX + w;
       return true;
     }
   }
-
   let nextY = 0;
   if (sheet.shelves.length > 0) {
     const lastShelf = sheet.shelves[sheet.shelves.length - 1];
     nextY = lastShelf.y + lastShelf.height + gapMm;
   }
-
   if (nextY + h <= paperH) {
     sheet.shelves.push({ y: nextY, height: h, usedWidth: w });
-    sheet.placements.push({
-      piece: piece,
-      orient: orient,
-      x: 0,
-      y: nextY,
-      w: w,
-      h: h
-    });
+    sheet.placements.push({ piece: piece, orient: orient, x: 0, y: nextY, w: w, h: h });
     return true;
   }
   return false;
@@ -1356,51 +1331,48 @@ function updatePrintFit() {
   const resultEl = document.getElementById('print-fit-result');
   const confirmBtn = document.getElementById('print-confirm');
   const pieces = collectPrintPieces();
-
   if (pieces.length === 0) {
     resultEl.className = 'fit-result fit-bad';
     resultEl.innerHTML = '<b>Nothing to print</b><br>Add images to at least one page before printing.';
     confirmBtn.disabled = true;
     return;
   }
-
   let maxSeam = 0;
   state.pages.forEach(page => {
     maxSeam = Math.max(maxSeam, page.seamH, page.seamV);
   });
   const gapMm = maxSeam;
-
   const result = packPieces(pieces, paper.usableW, paper.usableH, gapMm);
-
   if (result.tooLarge) {
     const p = result.tooLarge;
     resultEl.className = 'fit-result fit-bad';
     resultEl.innerHTML = '<b>Image too large for ' + paper.size + ' ' + paper.orient + '</b><br>' +
-      p.label + ' is ' + p.widthMm.toFixed(1) + '×' + p.heightMm.toFixed(1) + ' mm which exceeds usable area (' +
-      paper.usableW + '×' + paper.usableH + ' mm).<br><br>Try A3, landscape, or smaller margins.';
+                        p.label + ' is ' + p.widthMm.toFixed(1) + '×' + p.heightMm.toFixed(1) +
+                        ' mm which exceeds usable area (' + paper.usableW + '×' + paper.usableH + ' mm).<br><br>' +
+                        'Try A3, landscape, or smaller margins.';
     confirmBtn.disabled = true;
     return;
   }
-
   const sheetCount = result.sheets.length;
   const pieceCount = pieces.length;
   const rotatedCount = result.sheets.reduce((sum, sheet) =>
     sum + sheet.placements.filter(p => p.orient.rotated).length, 0);
-
   resultEl.className = 'fit-result fit-ok';
   let msg = '<b>Ready to print:</b><br>';
-  msg += pieceCount + ' image piece' + (pieceCount !== 1 ? 's' : '') + ' fit on ' + sheetCount + ' ' + paper.size + ' ' + paper.orient + ' sheet' + (sheetCount !== 1 ? 's' : '');
+  msg += pieceCount + ' image piece' + (pieceCount !== 1 ? 's' : '') +
+         ' fit on ' + sheetCount + ' ' + paper.size + ' ' + paper.orient + ' sheet' + (sheetCount !== 1 ? 's' : '');
   if (rotatedCount > 0) {
-    msg += '<br><span style="color:#FFB000">' + rotatedCount + ' piece' + (rotatedCount !== 1 ? 's' : '') + ' auto-rotated to fit</span>';
+    msg += '<br><span style="color:#FFB000">' + rotatedCount + ' piece' +
+           (rotatedCount !== 1 ? 's' : '') + ' auto-rotated to fit</span>';
   }
   msg += '<br><span style="font-size:11px;color:#888">Gap between pieces: ' + gapMm + ' mm (matches largest seam for cutting)</span>';
   if (state.cornerMode !== 'none') {
     const modeText = state.cornerMode === 'outer' ? 'outer edges' : 'every card';
-    msg += '<br><span style="font-size:11px;color:#888">Corners rounded: ' + state.cornerRadius + ' mm on ' + modeText + '</span>';
+    msg += '<br><span style="font-size:11px;color:#888">Corners rounded: ' +
+           state.cornerRadius + ' mm on ' + modeText + '</span>';
   }
   resultEl.innerHTML = msg;
   confirmBtn.disabled = false;
-
   window._printResult = result;
   window._printPaper = paper;
   window._printGap = gapMm;
@@ -1428,7 +1400,6 @@ function preparePrint(packResult, paper, gapMm) {
   const canvasArea = document.getElementById('canvas-area');
   const MM_TO_PX = 96 / 25.4;
   canvasArea.innerHTML = '';
-
   packResult.sheets.forEach((sheet, sheetIdx) => {
     const sheetDiv = document.createElement('div');
     sheetDiv.className = 'print-page';
@@ -1437,14 +1408,11 @@ function preparePrint(packResult, paper, gapMm) {
     sheetDiv.style.background = 'white';
     sheetDiv.style.position = 'relative';
     sheetDiv.style.margin = '0 auto';
-
     sheet.placements.forEach(placement => {
       renderPrintPiece(sheetDiv, placement, MM_TO_PX);
     });
-
     canvasArea.appendChild(sheetDiv);
   });
-
   setTimeout(() => {
     window.print();
     setTimeout(() => {
@@ -1460,7 +1428,6 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   const piece = placement.piece;
   const orient = placement.orient;
   const img = piece.image;
-
   const pieceDiv = document.createElement('div');
   pieceDiv.style.position = 'absolute';
   pieceDiv.style.left = (placement.x * MM_TO_PX) + 'px';
@@ -1469,13 +1436,10 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   pieceDiv.style.height = (orient.h * MM_TO_PX) + 'px';
   pieceDiv.style.overflow = 'hidden';
 
-  // Apply corner rounding based on current mode
   if (state.cornerMode !== 'none' && state.cornerRadius > 0) {
     if (state.cornerMode === 'outer') {
-      // Round the piece's outer corners
       pieceDiv.style.borderRadius = (state.cornerRadius * MM_TO_PX) + 'px';
     }
-    // 'every' mode is handled below with per-pocket masks
   }
 
   const imgEl = document.createElement('img');
@@ -1483,7 +1447,6 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   imgEl.style.position = 'absolute';
   imgEl.style.width = (img.widthMm * MM_TO_PX) + 'px';
   imgEl.style.height = 'auto';
-
   if (!orient.rotated) {
     imgEl.style.left = ((img.xMm - piece.offsetX_mm) * MM_TO_PX) + 'px';
     imgEl.style.top = ((img.yMm - piece.offsetY_mm) * MM_TO_PX) + 'px';
@@ -1493,13 +1456,12 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
     imgEl.style.left = '0px';
     imgEl.style.top = '0px';
     imgEl.style.transform = 'rotate(90deg) translateY(-100%) translate(' +
-      ((img.xMm - piece.offsetX_mm) * MM_TO_PX) + 'px, ' +
-      ((img.yMm - piece.offsetY_mm) * MM_TO_PX) + 'px)';
+                            ((img.xMm - piece.offsetX_mm) * MM_TO_PX) + 'px, ' +
+                            ((img.yMm - piece.offsetY_mm) * MM_TO_PX) + 'px)';
     imgEl.style.transformOrigin = 'top left';
   }
   pieceDiv.appendChild(imgEl);
 
-  // For 'every' mode: add corner overlays for each pocket within the piece
   if (state.cornerMode === 'every' && state.cornerRadius > 0) {
     renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX);
   }
@@ -1507,7 +1469,6 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   sheetDiv.appendChild(pieceDiv);
 }
 
-// For 'every' mode: place white corner overlays at each pocket within the piece
 function renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX) {
   const radiusPx = state.cornerRadius * MM_TO_PX;
   const pocketW_mm = piece.pocketW;
@@ -1516,29 +1477,24 @@ function renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX) {
   const seamV_mm = piece.seamV;
   const cols = piece.pieceCols;
   const rows = piece.pieceRows;
-
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       let x_mm, y_mm, w_mm, h_mm;
-      
       if (!orient.rotated) {
         x_mm = c * (pocketW_mm + seamH_mm);
         y_mm = r * (pocketH_mm + seamV_mm);
         w_mm = pocketW_mm;
         h_mm = pocketH_mm;
       } else {
-        // When rotated, pockets flip - width becomes height
         x_mm = r * (pocketH_mm + seamV_mm);
         y_mm = c * (pocketW_mm + seamH_mm);
         w_mm = pocketH_mm;
         h_mm = pocketW_mm;
       }
-
       const x_px = x_mm * MM_TO_PX;
       const y_px = y_mm * MM_TO_PX;
       const w_px = w_mm * MM_TO_PX;
       const h_px = h_mm * MM_TO_PX;
-
       const corners = [
         { cls: 'tl', dx: 0, dy: 0 },
         { cls: 'tr', dx: w_px - radiusPx, dy: 0 },
@@ -1576,39 +1532,31 @@ function renderSizeGuide() {
   const pocketH = p.pocketH;
   const seamH = p.seamH;
   const seamV = p.seamV;
-
   document.getElementById('sg-pocket-info').textContent = pocketW + ' × ' + pocketH + ' mm';
   const seamText = (seamH === seamV) ? seamH + ' mm' : 'H:' + seamH + ' mm, V:' + seamV + ' mm';
   document.getElementById('sg-seam-info').textContent = seamText;
-
   const contentEl = document.getElementById('size-guide-content');
   contentEl.innerHTML = '';
-
   const sections = [
     { title: 'Horizontal Slots (1 row)', rows: 1, cols: [1, 2, 3, 4] },
     { title: 'Medium Grid Slots (2 rows)', rows: 2, cols: [1, 2, 3, 4] },
     { title: 'Tall Grid Slots (3 rows)', rows: 3, cols: [1, 2, 3, 4] }
   ];
-
   sections.forEach(section => {
     const sectionEl = document.createElement('div');
     sectionEl.className = 'size-guide-section';
-
     const titleEl = document.createElement('div');
     titleEl.className = 'size-guide-section-title';
     titleEl.textContent = section.title;
     sectionEl.appendChild(titleEl);
-
     const gridEl = document.createElement('div');
     gridEl.className = 'size-guide-grid';
-
     section.cols.forEach(cols => {
       const rows = section.rows;
       const widthMm = cols * pocketW + (cols - 1) * seamH;
       const heightMm = rows * pocketH + (rows - 1) * seamV;
       const widthInches = (widthMm / 25.4).toFixed(2);
       const heightInches = (heightMm / 25.4).toFixed(2);
-
       const maxDim = 60;
       const ratio = widthMm / heightMm;
       let previewW, previewH;
@@ -1619,20 +1567,16 @@ function renderSizeGuide() {
         previewH = maxDim;
         previewW = previewH * ratio;
       }
-
       const itemEl = document.createElement('div');
       itemEl.className = 'size-guide-item';
-      itemEl.innerHTML =
-        '<div class="preview">' +
-        '  <div class="preview-box" style="width:' + previewW + 'px;height:' + previewH + 'px"></div>' +
-        '</div>' +
-        '<div class="label">' + cols + '×' + rows + '</div>' +
-        '<div class="mm">' + widthMm.toFixed(1) + ' × ' + heightMm.toFixed(1) + ' mm</div>' +
-        '<div class="inches">' + widthInches + '" × ' + heightInches + '"</div>';
-
+      itemEl.innerHTML = '<div class="preview">' +
+                         '  <div class="preview-box" style="width:' + previewW + 'px;height:' + previewH + 'px"></div>' +
+                         '</div>' +
+                         '<div class="label">' + cols + '×' + rows + '</div>' +
+                         '<div class="mm">' + widthMm.toFixed(1) + ' × ' + heightMm.toFixed(1) + ' mm</div>' +
+                         '<div class="inches">' + widthInches + '" × ' + heightInches + '"</div>';
       gridEl.appendChild(itemEl);
     });
-
     sectionEl.appendChild(gridEl);
     contentEl.appendChild(sectionEl);
   });
@@ -1674,38 +1618,77 @@ function updatePhysicalInfo() {
 // EVENT HANDLERS
 // ============================================================
 document.addEventListener('wheel', (e) => {
-  if (!state.selectedSlot) return;
-  const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
-  const img = currentPage().images[key];
-  if (!img) return;
-  if (!e.target.closest('.pocket.has-image, .pocket.selected, .seam-bridge')) return;
-  const selPocket = e.target.closest('.pocket');
-  if (selPocket) {
-    const r = parseInt(selPocket.dataset.row);
-    const c = parseInt(selPocket.dataset.col);
-    const slot = findSlotAt(r, c);
-    if (!slot || slot.row !== state.selectedSlot.row || slot.col !== state.selectedSlot.col) return;
+  // Only handle wheel events inside the canvas area
+  const inCanvasArea = e.target.closest('#canvas-area');
+  if (!inCanvasArea) return;
+
+  // If a slot with an image is selected AND the wheel is over that slot,
+  // zoom the image inside the slot
+  if (state.selectedSlot) {
+    const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
+    const img = currentPage().images[key];
+    if (img && e.target.closest('.pocket.has-image, .pocket.selected, .seam-bridge')) {
+      const selPocket = e.target.closest('.pocket');
+      let overSelected = true;
+      if (selPocket) {
+        const r = parseInt(selPocket.dataset.row);
+        const c = parseInt(selPocket.dataset.col);
+        const slot = findSlotAt(r, c);
+        if (!slot || slot.row !== state.selectedSlot.row || slot.col !== state.selectedSlot.col) {
+          overSelected = false;
+        }
+      }
+      if (overSelected) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -3 : 3;
+        zoomImage(delta);
+        return;
+      }
+    }
   }
+
+  // Otherwise: zoom the whole view (page zoom)
+  // Skip if Ctrl/Cmd is held (browser zoom)
+  if (e.ctrlKey || e.metaKey) return;
   e.preventDefault();
-  const delta = e.deltaY > 0 ? -3 : 3;
-  zoomImage(delta);
+  const deltaPercent = e.deltaY > 0 ? -10 : 10;
+  zoomView(deltaPercent);
 }, { passive: false });
 
 document.addEventListener('keydown', (e) => {
-  if (!state.selectedSlot) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
-  const img = currentPage().images[key];
+  const key = state.selectedSlot ? state.selectedSlot.row + ',' + state.selectedSlot.col : null;
+  const img = key ? currentPage().images[key] : null;
+
   if ((e.key === 'c' || e.key === 'C') && (e.ctrlKey || e.metaKey)) {
-    copyImageSettings();
-    e.preventDefault();
+    if (state.selectedSlot) { copyImageSettings(); e.preventDefault(); }
     return;
   }
   if ((e.key === 'v' || e.key === 'V') && (e.ctrlKey || e.metaKey)) {
-    pasteImageSettings();
+    if (state.selectedSlot) { pasteImageSettings(); e.preventDefault(); }
+    return;
+  }
+
+  if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
+    resetZoom();
     e.preventDefault();
     return;
   }
+
+  // + and - work even without a selected image: zoom the whole view
+  if (e.key === '+' || e.key === '=') {
+    if (img) zoomImage(3);
+    else zoomView(10);
+    e.preventDefault();
+    return;
+  }
+  if (e.key === '-') {
+    if (img) zoomImage(-3);
+    else zoomView(-10);
+    e.preventDefault();
+    return;
+  }
+
   if (!img) return;
   const step = e.shiftKey ? 10 : 1;
   let handled = true;
@@ -1713,8 +1696,6 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowRight') img.xMm += step;
   else if (e.key === 'ArrowUp') img.yMm -= step;
   else if (e.key === 'ArrowDown') img.yMm += step;
-  else if (e.key === '+' || e.key === '=') { zoomImage(3); return; }
-  else if (e.key === '-') { zoomImage(-3); return; }
   else if (e.key === 'Delete') { removeImage(); return; }
   else handled = false;
   if (handled) {
@@ -1735,7 +1716,13 @@ document.addEventListener('mousedown', (e) => {
   if (!state.selectedSlot || state.selectedSlot.row !== slot.row || state.selectedSlot.col !== slot.col) return;
   const img = currentPage().images[slot.key];
   if (!img) return;
-  dragging = { startX: e.clientX, startY: e.clientY, imgX: img.xMm, imgY: img.yMm, key: slot.key };
+  dragging = {
+    startX: e.clientX,
+    startY: e.clientY,
+    imgX: img.xMm,
+    imgY: img.yMm,
+    key: slot.key
+  };
   e.preventDefault();
 });
 
@@ -1779,6 +1766,19 @@ document.addEventListener('mouseup', (e) => {
         }
       });
     }
+  }
+});
+
+// Click on empty canvas area background clears selection
+document.getElementById('canvas-area').addEventListener('mousedown', (e) => {
+  const clickedInteractive = e.target.closest('.pocket, .seam-toggle, .seam-bridge, .slot-outline, .corner-overlay, .cut-seam-mask');
+  if (clickedInteractive) return;
+  if (e.button !== 0) return;
+  if (state.selectedSlot || state.rangeSelection) {
+    state.selectedSlot = null;
+    state.rangeSelection = null;
+    renderBinder();
+    setStatus('Selection cleared');
   }
 });
 

@@ -11,13 +11,14 @@ Michify makes it easy to design and print binder art without manual measuring or
 Unlike collection management apps that focus on tracking cards, Michify is a precision printing tool: it produces printable images that fit your binder pockets exactly.
 
 ## Features
-
 - **Custom binder dimensions:** Set exact pocket width, height, and seam sizes for your specific binder
 - **Multi-pocket image slots:** Design artwork spanning multiple pockets in any rectangular configuration
 - **Michi Method support:** Handle cut and continuous seams (side-loading binders where pockets face each other)
 - **Absolute mm-based sizing:** Same zoom shows the same image size across different slot dimensions
 - **Smart image handling:** Auto-fit cover mode, drag to pan, wheel to zoom, arrow keys for pixel-precision
 - **Automatic image downscaling:** Large uploads are resized to save memory without visible quality loss. Configurable from 2000 px to original resolution.
+- **Office-style zoom slider:** Fast visual zoom control with slider, +/− buttons, and percentage display. Ctrl+0 resets to 100%.
+- **Smooth canvas navigation:** Scroll wheel over empty area zooms the whole view. Click background to clear selection and pan freely.
 - **Clone and duplicate:** Copy image crops between slots, extend images seamlessly to neighboring slots
 - **Multi-page projects:** Design a whole binder in one session, save as JSON for later editing
 - **Size Guide reference:** See all possible slot dimensions calculated from your binder measurements
@@ -27,7 +28,6 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 - **A4 and A3 printing:** Portrait or landscape orientation with automatic fit checking
 
 ## How to use
-
 1. Open the [live app](https://granothon.github.io/tcg-binder-designer) in your browser
 2. Measure your binder's actual pocket dimensions with a ruler
 3. Enter the measurements in the sidebar (pocket width, height, seam sizes)
@@ -40,6 +40,30 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 10. Adjust the crop with your mouse (drag to pan, wheel to zoom) or arrow keys
 11. Optionally check the Size Guide to see all possible slot dimensions
 12. Click "Print / PDF" to export at the exact size for your binder
+
+## Keyboard shortcuts and navigation
+
+Michify supports common shortcuts familiar from other design and office tools:
+
+**View zoom (when no image is selected):**
+- Scroll wheel over the canvas: zoom in/out
+- `+` / `-` keys: zoom in/out by 10%
+- **Ctrl+0** (Cmd+0 on Mac): reset zoom to 100%
+- Click the zoom percentage in the sidebar for the same reset
+- Drag the zoom slider directly for fast visual adjustments
+
+**Image editing (when an image slot is selected):**
+- Scroll wheel over the selected slot: zoom the image inside the slot
+- `+` / `-` keys: zoom the image by 3 mm
+- Arrow keys: nudge the image by 1 mm (hold Shift for 10 mm)
+- **Ctrl+C** / **Ctrl+V**: copy and paste image crops between slots
+- **Delete**: remove the image from the selected slot
+
+**Selection:**
+- Click a pocket: select it
+- Drag across pockets: select a rectangular area for multi-pocket slots
+- Shift+click a pocket: extend selection to a rectangular area
+- Click empty canvas background: clear all selections and pan freely
 
 ## Understanding seams
 
@@ -54,7 +78,6 @@ Binders come in different styles, and the seams between pockets behave different
 ## Understanding corner styles
 
 Michify offers three corner styles to match your aesthetic preference and available tools:
-
 - **No rounding (default):** Straight corners on all images. Choose this if you're using scissors or don't have specific tools for corner cutting. Also good if you prefer the crisp look of sharp corners.
 - **Round outer edges:** The outer corners of each image piece are rounded. Multi-pocket spanning artwork (with continuous seams) is treated as one unified piece with only the outermost corners rounded. This creates a look where the whole spread appears as one large card.
 - **Round every card:** Each individual pocket gets its own set of rounded corners. Multi-pocket spanning artwork shows rounded corners at every pocket boundary, making the layout look like separate cards placed next to each other.
@@ -62,7 +85,6 @@ Michify offers three corner styles to match your aesthetic preference and availa
 **About the corner radius:** The default value is 3.18 mm which matches the official TCG card corner radius exactly (1/8 inch = 3.175 mm). This makes printed inserts visually indistinguishable from real cards when placed side by side. Adjust the radius if your specific card game uses different dimensions or if you prefer a different aesthetic.
 
 The rounded corner effect works two ways during printing:
-
 - **On white paper:** The rounded corners blend perfectly with the paper, giving the visual appearance of pre-cut rounded cards
 - **On any paper color:** The rounded areas serve as cutting guides. Cut straight along the edges and the "corners" define where your card's rounded shape ends. No corner cutter tool needed either way.
 
@@ -73,7 +95,6 @@ Modern phone and camera photos are often much larger than needed for printing. A
 Michify automatically downscales images when you drop them onto the canvas. This keeps memory usage low and the app responsive, especially for multi-page projects.
 
 **Available quality settings:**
-
 - **Balanced (3000 px, default):** Enough for 300 DPI print quality on full 3×3 spreads. Recommended for almost all use cases.
 - **Small (2000 px):** More aggressive downscale for very large projects or older devices. Enough for 300 DPI on 2×2 slots.
 - **High (4000 px):** Extra margin for very large slot spans or 600 DPI professional printing.
@@ -90,7 +111,6 @@ For seams, measure the visible gap between two adjacent pocket openings when car
 ## Printing tips
 
 Michify handles the complex parts of printing automatically:
-
 - **Bin packing:** Multiple images are arranged efficiently on each A4 or A3 sheet, rotating pieces when needed to save paper
 - **Cutting margins:** The gap between printed pieces matches your binder's seam width, so you can cut straight lines with a paper cutter
 - **Corner rounding:** Enable rounded corners in the sidebar to add professional-looking rounded corners automatically. Works as both visual style and cutting guide.
@@ -132,7 +152,6 @@ The Michi Method is a binder art technique popularized by [@peeplop](https://www
 Michify is an independent tool that supports designing for this method with precise measurements, but is not officially affiliated with any Michi Method creators or communities. It's built to make the design process easier and more accurate.
 
 **Community resources:**
-
 - [@peeplop on Instagram](https://www.instagram.com/peeplop/) - original creator
 - Michi Method community Discord (link available via @peeplop's Instagram bio)
 - [Full Michi Method guide by woahpoke](https://www.woahpoke.com/michi-method) - excellent introduction to the technique
@@ -146,6 +165,5 @@ Copyright © 2026 Risto Ruuskanen
 ## Author
 
 Created and maintained by Risto Ruuskanen.
-
 - GitHub: [@granothon](https://github.com/granothon)
 - Ko-fi: [ko-fi.com/granothon](https://ko-fi.com/granothon)
