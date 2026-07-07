@@ -1576,6 +1576,25 @@ function cacheNaturalPixels(img) {
   };
   t.src = img.src;
 }
+
+function confirmPrint() {
+  const paper = window._printPaper;
+  const result = window._printResult;
+  const gapMm = window._printGap;
+  if (!paper || !result) {
+    updatePrintFit();
+    return;
+  }
+  const styleEl = document.createElement('style');
+  styleEl.id = 'dynamic-print-style';
+  styleEl.textContent = '@page { size: ' + paper.size + ' ' + paper.orient + '; margin: ' + paper.margin + 'mm; }';
+  const oldStyle = document.getElementById('dynamic-print-style');
+  if (oldStyle) oldStyle.remove();
+  document.head.appendChild(styleEl);
+  closePrintDialog();
+  preparePrint(result, paper, gapMm);
+}
+
 function preparePrint(packResult, paper, gapMm) {
   const canvasArea = document.getElementById('canvas-area');
   const MM_TO_PX = 96 / 25.4;
