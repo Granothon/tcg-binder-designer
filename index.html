@@ -1,7 +1,6 @@
 <!--
   Michify - TCG Binder Designer
   An open-source binder art designer for TCG collections.
-  
   Copyright (c) 2026 Risto Ruuskanen
   Licensed under the MIT License
   https://github.com/granothon/tcg-binder-designer
@@ -9,241 +8,230 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Free open-source tool for designing TCG binder art with millimeter-perfect print output. Plan Michi Method spreads and custom binder layouts.">
-<title>Michify - TCG Binder Designer</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free open-source tool for designing TCG binder art with millimeter-perfect print output. Plan Michi Method spreads and custom binder layouts.">
+  <title>Michify - TCG Binder Designer</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <header>
+    <h1>Michify</h1>
+    <span class="tagline">Binder art designer for TCG collections</span>
+    <button onclick="newProject()">New</button>
+    <button onclick="document.getElementById('load-file').click()">Open JSON</button>
+    <button onclick="saveProject()">Save JSON</button>
+    <input type="file" id="load-file" accept=".json" onchange="loadProject(event)">
+    <div class="spacer"></div>
+    <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="support-link">
+      ☕ Buy me a coffee
+    </a>
+    <button onclick="openAboutDialog()">About</button>
+    <button onclick="openPrintDialog()">Print / PDF</button>
+  </header>
 
-<header>
-  <h1>Michify</h1>
-  <span class="tagline">Binder art designer for TCG collections</span>
-  <button onclick="newProject()">New</button>
-  <button onclick="document.getElementById('load-file').click()">Open JSON</button>
-  <button onclick="saveProject()">Save JSON</button>
-  <input type="file" id="load-file" accept=".json" onchange="loadProject(event)">
-  <div class="spacer"></div>
-  <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="support-link">
-    ☕ Buy me a coffee
-  </a>
-  <button onclick="openAboutDialog()">About</button>
-  <button onclick="openPrintDialog()">Print / PDF</button>
-</header>
+  <div id="sidebar">
+    <h2>Pages</h2>
+    <div id="pages-list" class="pages-list"></div>
+    <button class="secondary full-width" onclick="addPage()">+ Add page</button>
+    <button class="secondary full-width mt-5" onclick="duplicatePage()">Duplicate current</button>
 
-<div id="sidebar">
-  <h2>Pages</h2>
-  <div id="pages-list" class="pages-list"></div>
-  <button class="secondary full-width" onclick="addPage()">+ Add page</button>
-  <button class="secondary full-width mt-5" onclick="duplicatePage()">Duplicate current</button>
-  
-  <h2 class="mt-20">Binder dimensions</h2>
-  <div class="subsection">
-    <div class="field"><label>Rows</label><input type="number" id="rows" min="1" max="5" value="3" onchange="updateBinder()"></div>
-    <div class="field"><label>Columns</label><input type="number" id="cols" min="1" max="5" value="3" onchange="updateBinder()"></div>
-    <div class="field"><label>Pocket W (mm)</label><input type="number" id="pocket-w" min="30" max="150" value="68" step="0.5" onchange="updateBinder()"></div>
-    <div class="field"><label>Pocket H (mm)</label><input type="number" id="pocket-h" min="30" max="200" value="93" step="0.5" onchange="updateBinder()"></div>
-    <div class="field"><label>H-seam (mm)</label><input type="number" id="seam-h" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
-    <div class="field"><label>V-seam (mm)</label><input type="number" id="seam-v" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
-  </div>
-  
-  <h2>View</h2>
-  <div class="subsection">
-    <div class="zoom-slider-row">
-      <label class="zoom-label">Zoom</label>
-      <button class="zoom-btn" onclick="zoomView(-10)" title="Zoom out">−</button>
-      <input type="range" id="view-scale" class="zoom-slider" min="30" max="500" value="100" step="10" oninput="updateBinder()">
-      <button class="zoom-btn" onclick="zoomView(10)" title="Zoom in">+</button>
-      <span id="zoom-value" class="zoom-value" onclick="resetZoom()" title="Click to reset zoom (Ctrl+0)">100%</span>
-    </div>
-    <div class="legend">
-      <div class="legend-item"><div class="legend-swatch swatch-cut"></div>Cut</div>
-      <div class="legend-item"><div class="legend-swatch swatch-continuous"></div>Continuous</div>
-      <div class="legend-item"><div class="legend-swatch swatch-lost"></div>Lost area</div>
-      <div class="legend-item"><div class="legend-swatch swatch-empty"></div>Intentional empty</div>
-    </div>
-  </div>
-  
-  <h2 class="mt-20">Seams</h2>
-  <div class="subsection">
-    <button class="secondary full-width" onclick="setAllSeams('cut')">All CUT</button>
-    <button class="secondary full-width mt-5" onclick="setAllSeams('continuous')">All CONTINUOUS</button>
-    <div class="info">Click any seam on canvas to toggle between cut and continuous.</div>
-  </div>
-  
-  <h2 class="mt-20">Corners</h2>
-  <div class="subsection">
-    <div class="field">
-      <label>Style</label>
-      <select id="corner-mode" onchange="updateCorners()">
-        <option value="none" selected>No rounding</option>
-        <option value="outer">Round outer edges</option>
-        <option value="every">Round every card</option>
-      </select>
-    </div>
-    <div class="field hidden" id="corner-radius-field">
-      <label>Radius (mm)</label>
-      <input type="number" id="corner-radius" value="3.18" min="0.5" max="10" step="0.01" onchange="updateCorners()">
-    </div>
-    <div class="info">
-      Preview shows rounded corners and they carry over to print. No corner cutter tool needed.
-    </div>
-  </div>
-
-  <h2 class="mt-20">Image quality</h2>
-  <div class="subsection">
-    <div class="field">
-      <label>Downscale on upload</label>
-      <select id="image-quality" onchange="updateImageQuality()">
-        <option value="3000" selected>Balanced (3000 px)</option>
-        <option value="2000">Small (2000 px)</option>
-        <option value="4000">High (4000 px)</option>
-        <option value="0">Original (no downscale)</option>
-      </select>
-    </div>
-    <div class="info">
-      Large images are downscaled when uploaded to keep the app fast.
-      3000 px is enough for 300 DPI print quality on full 3×3 spreads.
-      Choose "Original" to keep full resolution (uses more memory).
-    </div>
-  </div>
-
-</div>
-
-<div id="canvas-area"><div id="binder-canvas"></div></div>
-
-<div id="properties">
-  <h2>Selected <span id="clipboard-indicator"></span></h2>
-  <div class="subsection" id="pocket-props"><div class="empty-note">No selection</div></div>
-  
-  <div id="slot-size-section">
-    <h2 class="mt-20">Slot size (pockets)</h2>
+    <h2 class="mt-20">Binder dimensions</h2>
     <div class="subsection">
-      <div class="field"><label>Width</label><input type="number" id="slot-w" min="1" max="5" value="1" onchange="resizeSlot()"></div>
-      <div class="field"><label>Height</label><input type="number" id="slot-h" min="1" max="5" value="1" onchange="resizeSlot()"></div>
-      <button class="secondary full-width mt-8" id="mark-empty-btn" onclick="toggleIntentionalEmpty()" title="Toggle intentional empty (E)">
-        Toggle intentional empty
-      </button>
+      <div class="field"><label>Rows</label><input type="number" id="rows" min="1" max="5" value="3" onchange="updateBinder()"></div>
+      <div class="field"><label>Columns</label><input type="number" id="cols" min="1" max="5" value="3" onchange="updateBinder()"></div>
+      <div class="field"><label>Pocket W (mm)</label><input type="number" id="pocket-w" min="30" max="150" value="68" step="0.5" onchange="updateBinder()"></div>
+      <div class="field"><label>Pocket H (mm)</label><input type="number" id="pocket-h" min="30" max="200" value="93" step="0.5" onchange="updateBinder()"></div>
+      <div class="field"><label>H-seam (mm)</label><input type="number" id="seam-h" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
+      <div class="field"><label>V-seam (mm)</label><input type="number" id="seam-v" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
+    </div>
+
+    <h2>View</h2>
+    <div class="subsection">
+      <div class="zoom-slider-row">
+        <label class="zoom-label">Zoom</label>
+        <button class="zoom-btn" onclick="zoomView(-10)" title="Zoom out">−</button>
+        <input type="range" id="view-scale" class="zoom-slider" min="30" max="500" value="100" step="10" oninput="updateBinder()">
+        <button class="zoom-btn" onclick="zoomView(10)" title="Zoom in">+</button>
+        <span id="zoom-value" class="zoom-value" onclick="resetZoom()" title="Click to reset zoom (Ctrl+0)">100%</span>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch swatch-cut"></div>Cut</div>
+        <div class="legend-item"><div class="legend-swatch swatch-continuous"></div>Continuous</div>
+        <div class="legend-item"><div class="legend-swatch swatch-lost"></div>Lost area</div>
+        <div class="legend-item"><div class="legend-swatch swatch-empty"></div>Intentional empty</div>
+      </div>
+    </div>
+
+    <h2 class="mt-20">Seams</h2>
+    <div class="subsection">
+      <button class="secondary full-width" onclick="setAllSeams('cut')">All CUT</button>
+      <button class="secondary full-width mt-5" onclick="setAllSeams('continuous')">All CONTINUOUS</button>
+      <div class="info">Click any seam on canvas to toggle between cut and continuous.</div>
+    </div>
+
+    <h2 class="mt-20">Corners</h2>
+    <div class="subsection">
+      <div class="field">
+        <label>Style</label>
+        <select id="corner-mode" onchange="updateCorners()">
+          <option value="none" selected>No rounding</option>
+          <option value="outer">Round outer edges</option>
+          <option value="every">Round every card</option>
+        </select>
+      </div>
+      <div class="field hidden" id="corner-radius-field">
+        <label>Radius (mm)</label>
+        <input type="number" id="corner-radius" value="3.18" min="0.5" max="10" step="0.01" onchange="updateCorners()">
+      </div>
       <div class="info">
-        Marks a pocket as intentionally empty (Michi Method).
-        Shows as a hatched pattern on canvas, stays clean in print.
-        Press <b>E</b> to toggle.
+        Preview shows rounded corners and they carry over to print. No corner cutter tool needed.
+      </div>
+    </div>
+
+    <h2 class="mt-20">Image quality</h2>
+    <div class="subsection">
+      <div class="field">
+        <label>Downscale on upload</label>
+        <select id="image-quality" onchange="updateImageQuality()">
+          <option value="3000" selected>Balanced (3000 px)</option>
+          <option value="2000">Small (2000 px)</option>
+          <option value="4000">High (4000 px)</option>
+          <option value="0">Original (no downscale)</option>
+        </select>
+      </div>
+      <div class="info">
+        Large images are downscaled when uploaded to keep the app fast. 3000 px is enough for 300 DPI print quality on full 3×3 spreads. Choose "Original" to keep full resolution (uses more memory).
       </div>
     </div>
   </div>
-  
-  <div id="image-section" class="hidden">
-    <h2 class="mt-20">Image crop (mm)</h2>
-    <div class="subsection">
-      <div class="field"><label>Image width</label><input type="number" id="img-width-mm" min="10" max="2000" value="100" step="1" onchange="updateImageProps()"></div>
-      <div class="field"><label>X offset</label><input type="number" id="img-x-mm" value="0" step="0.5" onchange="updateImageProps()"></div>
-      <div class="field"><label>Y offset</label><input type="number" id="img-y-mm" value="0" step="0.5" onchange="updateImageProps()"></div>
-      <div class="field"><label>Rotate</label><select id="img-rotate" onchange="updateImageProps()"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
-      <div class="zoom-controls">
-        <button onclick="zoomImage(-5)" title="Zoom out">−</button>
-        <button onclick="autoFitCover()" title="Fit">Fit</button>
-        <button onclick="zoomImage(5)" title="Zoom in">+</button>
+
+  <div id="canvas-area"><div id="binder-canvas"></div></div>
+
+  <div id="properties">
+    <h2>Selected <span id="clipboard-indicator"></span></h2>
+    <div class="subsection" id="pocket-props"><div class="empty-note">No selection</div></div>
+
+    <div id="slot-size-section">
+      <h2 class="mt-20">Slot size (pockets)</h2>
+      <div class="subsection">
+        <div class="field"><label>Width</label><input type="number" id="slot-w" min="1" max="5" value="1" onchange="resizeSlot()"></div>
+        <div class="field"><label>Height</label><input type="number" id="slot-h" min="1" max="5" value="1" onchange="resizeSlot()"></div>
+        <button class="secondary full-width mt-8" id="mark-empty-btn" onclick="toggleIntentionalEmpty()" title="Toggle intentional empty (E)">
+          Toggle intentional empty
+        </button>
+        <div class="info">
+          Marks a pocket as intentionally empty (Michi Method). Shows as a hatched pattern on canvas, stays clean in print. Press <b>E</b> to toggle.
+        </div>
       </div>
-      <button class="secondary full-width mt-8" onclick="removeImage()">Remove image</button>
-      <div class="info">Wheel = zoom, drag = pan, arrows = 1mm (shift = 10mm).</div>
     </div>
-    
-    <h2 class="mt-20">Clone</h2>
-    <div class="subsection">
-      <button class="accent full-width" onclick="copyImageSettings()">Copy crop to clipboard</button>
-      <button class="secondary full-width mt-5" id="paste-btn" onclick="pasteImageSettings()" disabled>Paste crop here</button>
-    </div>
-    
-    <h2 class="mt-20">Duplicate to neighbor</h2>
-    <div class="subsection">
-      <div class="duplicate-grid">
-        <button class="secondary" onclick="duplicateToNeighbor('left')">← Left</button>
-        <button class="secondary" onclick="duplicateToNeighbor('right')">Right →</button>
-        <button class="secondary" onclick="duplicateToNeighbor('up')">↑ Up</button>
-        <button class="secondary" onclick="duplicateToNeighbor('down')">↓ Down</button>
+
+    <div id="image-section" class="hidden">
+      <h2 class="mt-20">Image crop (mm)</h2>
+      <div class="subsection">
+        <div class="field"><label>Image width</label><input type="number" id="img-width-mm" min="10" max="2000" value="100" step="1" onchange="updateImageProps()"></div>
+        <div class="field"><label>X offset</label><input type="number" id="img-x-mm" value="0" step="0.5" onchange="updateImageProps()"></div>
+        <div class="field"><label>Y offset</label><input type="number" id="img-y-mm" value="0" step="0.5" onchange="updateImageProps()"></div>
+        <div class="field"><label>Rotate</label><select id="img-rotate" onchange="updateImageProps()"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+        <div class="zoom-controls">
+          <button onclick="zoomImage(-5)" title="Zoom out">−</button>
+          <button onclick="autoFitCover()" title="Fit">Fit</button>
+          <button onclick="zoomImage(5)" title="Zoom in">+</button>
+        </div>
+        <button class="secondary full-width mt-8" onclick="removeImage()">Remove image</button>
+        <div class="info">Wheel = zoom, drag = pan, arrows = 1mm (shift = 10mm).</div>
       </div>
-      <div class="info">Creates a same-sized slot next to this one with continuing image content.</div>
+
+      <h2 class="mt-20">Clone</h2>
+      <div class="subsection">
+        <button class="accent full-width" onclick="copyImageSettings()">Copy crop to clipboard</button>
+        <button class="secondary full-width mt-5" id="paste-btn" onclick="pasteImageSettings()" disabled>Paste crop here</button>
+      </div>
+
+      <h2 class="mt-20">Expand slot</h2>
+      <div class="subsection">
+        <div class="duplicate-grid">
+          <button class="secondary" onclick="expandSlot('left')">← Left</button>
+          <button class="secondary" onclick="expandSlot('right')">Right →</button>
+          <button class="secondary" onclick="expandSlot('up')">↑ Up</button>
+          <button class="secondary" onclick="expandSlot('down')">↓ Down</button>
+        </div>
+        <div class="info">Grows this slot by one pocket in the chosen direction and refits the image as one piece. Use Copy/Paste crop to place the same image in a separate pocket.</div>
+      </div>
+    </div>
+
+    <h2 class="mt-20">Physical size</h2>
+    <div class="subsection physical-info-box" id="physical-info"></div>
+  </div>
+
+  <div class="status-bar" id="status-bar">Click or drag over pockets to select area, then drop image</div>
+
+  <!-- Print dialog -->
+  <div class="modal-backdrop" id="print-modal">
+    <div class="modal">
+      <h3>Print settings</h3>
+      <div class="field">
+        <label>Paper size</label>
+        <select id="paper-size" onchange="updatePrintFit()">
+          <option value="A4">A4 (210 × 297 mm)</option>
+          <option value="A3">A3 (297 × 420 mm)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Orientation</label>
+        <select id="paper-orient" onchange="updatePrintFit()">
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Margin (mm)</label>
+        <input type="number" id="paper-margin" value="5" min="0" max="20" step="1" onchange="updatePrintFit()">
+      </div>
+      <div id="print-fit-result"></div>
+      <div class="modal-actions">
+        <button class="secondary" onclick="closePrintDialog()">Cancel</button>
+        <button class="accent" id="print-confirm" onclick="confirmPrint()">Print</button>
+      </div>
     </div>
   </div>
-  
-  <h2 class="mt-20">Physical size</h2>
-  <div class="subsection physical-info-box" id="physical-info"></div>
-</div>
 
-<div class="status-bar" id="status-bar">Click or drag over pockets to select area, then drop image</div>
-
-<!-- Print dialog -->
-<div class="modal-backdrop" id="print-modal">
-  <div class="modal">
-    <h3>Print settings</h3>
-    <div class="field">
-      <label>Paper size</label>
-      <select id="paper-size" onchange="updatePrintFit()">
-        <option value="A4">A4 (210 × 297 mm)</option>
-        <option value="A3">A3 (297 × 420 mm)</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Orientation</label>
-      <select id="paper-orient" onchange="updatePrintFit()">
-        <option value="portrait">Portrait</option>
-        <option value="landscape">Landscape</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Margin (mm)</label>
-      <input type="number" id="paper-margin" value="5" min="0" max="20" step="1" onchange="updatePrintFit()">
-    </div>
-    <div id="print-fit-result"></div>
-    <div class="modal-actions">
-      <button class="secondary" onclick="closePrintDialog()">Cancel</button>
-      <button class="accent" id="print-confirm" onclick="confirmPrint()">Print</button>
+  <!-- About dialog -->
+  <div class="modal-backdrop" id="about-modal">
+    <div class="modal">
+      <h3>About Michify</h3>
+      <p class="modal-para">
+        A precision printing tool for TCG binder art layouts.
+        Design custom inserts, plan Michi Method spreads, and export print-ready layouts with millimeter-accurate dimensions.
+      </p>
+      <p class="modal-para">
+        <b>Version:</b> 3.3<br>
+        <b>License:</b> MIT (free and open source)<br>
+        <b>Author:</b> Risto Ruuskanen
+      </p>
+      <div class="attribution">
+        The Michi Method was popularized by <a href="https://instagram.com/peeplop" target="_blank" rel="noopener">@peeplop</a> on Instagram. Michify is an independent tool that supports designing for this method but is not officially affiliated with any Michi Method creators or communities.
+      </div>
+      <p class="modal-para">
+        This tool is free to use. If it saved you time, consider buying me a coffee to help maintain and improve it.
+      </p>
+      <div class="modal-link-buttons">
+        <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="modal-btn modal-btn-accent">
+          ☕ Buy me a coffee
+        </a>
+        <a href="https://github.com/granothon/tcg-binder-designer" target="_blank" rel="noopener" class="modal-btn modal-btn-secondary">
+          View source on GitHub
+        </a>
+        <a href="https://github.com/granothon/tcg-binder-designer/issues" target="_blank" rel="noopener" class="modal-btn modal-btn-secondary">
+          Report issue / request feature
+        </a>
+      </div>
+      <div class="modal-actions">
+        <button class="accent" onclick="closeAboutDialog()">Close</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- About dialog -->
-<div class="modal-backdrop" id="about-modal">
-  <div class="modal">
-    <h3>About Michify</h3>
-    <p class="modal-para">
-      A precision printing tool for TCG binder art layouts. Design custom inserts,
-      plan Michi Method spreads, and export print-ready layouts with millimeter-accurate
-      dimensions.
-    </p>
-    <p class="modal-para">
-      <b>Version:</b> 3.3<br>
-      <b>License:</b> MIT (free and open source)<br>
-      <b>Author:</b> Risto Ruuskanen
-    </p>
-    <div class="attribution">
-      The Michi Method was popularized by 
-      <a href="https://instagram.com/peeplop" target="_blank" rel="noopener">@peeplop</a> 
-      on Instagram. Michify is an independent tool that supports designing for this method 
-      but is not officially affiliated with any Michi Method creators or communities.
-    </div>
-    <p class="modal-para">
-      This tool is free to use. If it saved you time, consider buying me a coffee
-      to help maintain and improve it.
-    </p>
-    <div class="modal-link-buttons">
-      <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="modal-btn modal-btn-accent">
-        ☕ Buy me a coffee
-      </a>
-      <a href="https://github.com/granothon/tcg-binder-designer" target="_blank" rel="noopener" class="modal-btn modal-btn-secondary">
-        View source on GitHub
-      </a>
-      <a href="https://github.com/granothon/tcg-binder-designer/issues" target="_blank" rel="noopener" class="modal-btn modal-btn-secondary">
-        Report issue / request feature
-      </a>
-    </div>
-    <div class="modal-actions">
-      <button class="accent" onclick="closeAboutDialog()">Close</button>
-    </div>
-  </div>
-</div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

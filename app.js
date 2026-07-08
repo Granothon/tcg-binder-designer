@@ -1,8 +1,8 @@
 /*
-   Michify - TCG Binder Designer
-   Application logic
-   Copyright (c) 2026 Risto Ruuskanen
-   Licensed under the MIT License
+  Michify - TCG Binder Designer
+  Application logic
+  Copyright (c) 2026 Risto Ruuskanen
+  Licensed under the MIT License
 */
 
 // ============================================================
@@ -15,9 +15,9 @@ let state = {
   rangeSelection: null,
   viewScale: 3,
   clipboard: null,
-  cornerMode: 'none',    // 'none' | 'outer' | 'every'
-  cornerRadius: 3.18,    // mm
-  imageMaxDim: 3000      // max pixels on longest side, 0 = original
+  cornerMode: 'none',   // 'none' | 'outer' | 'every'
+  cornerRadius: 3.18,   // mm
+  imageMaxDim: 3000     // max pixels on longest side, 0 = original
 };
 
 let rangeSelecting = null;
@@ -35,11 +35,13 @@ function createEmptyPage() {
     seamsH: ['cut', 'continuous'],
     seamsV: ['cut', 'cut'],
     images: {},
-    emptyPockets: []  // Array of "row,col" strings for intentionally empty pockets
+    emptyPockets: [] // Array of "row,col" strings for intentionally empty pockets
   };
 }
 
-function currentPage() { return state.pages[state.currentPage]; }
+function currentPage() {
+  return state.pages[state.currentPage];
+}
 
 // ============================================================
 // SLOT LOGIC
@@ -308,17 +310,11 @@ function loadAndProcessImage(file, callback) {
   const reader = new FileReader();
   reader.onload = (ev) => {
     const dataUrl = ev.target.result;
-    if (maxDim === 0) {
-      callback(dataUrl);
-      return;
-    }
+    if (maxDim === 0) { callback(dataUrl); return; }
     const img = new Image();
     img.onload = () => {
       const longest = Math.max(img.width, img.height);
-      if (longest <= maxDim) {
-        callback(dataUrl);
-        return;
-      }
+      if (longest <= maxDim) { callback(dataUrl); return; }
       const ratio = maxDim / longest;
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(img.width * ratio);
@@ -333,9 +329,7 @@ function loadAndProcessImage(file, callback) {
       const scaledUrl = canvas.toDataURL(outType, quality);
       const originalKB = Math.round(dataUrl.length / 1024);
       const scaledKB = Math.round(scaledUrl.length / 1024);
-      setStatus('Image downscaled: ' + img.width + '×' + img.height +
-                ' → ' + canvas.width + '×' + canvas.height +
-                ' (' + originalKB + ' KB → ' + scaledKB + ' KB)');
+      setStatus('Image downscaled: ' + img.width + '×' + img.height + ' → ' + canvas.width + '×' + canvas.height + ' (' + originalKB + ' KB → ' + scaledKB + ' KB)');
       callback(scaledUrl);
     };
     img.src = dataUrl;
@@ -427,7 +421,6 @@ function renderBinder() {
   const totalH = (p.rows * p.pocketH + (p.rows - 1) * p.seamV) * scale;
   canvas.style.width = totalW + 'px';
   canvas.style.height = totalH + 'px';
-
   // Render pockets with image parts
   for (let row = 0; row < p.rows; row++) {
     for (let col = 0; col < p.cols; col++) {
@@ -440,7 +433,6 @@ function renderBinder() {
       pocket.style.height = pos.h + 'px';
       pocket.dataset.row = row;
       pocket.dataset.col = col;
-
       const slot = findSlotAt(row, col);
       if (slot) {
         pocket.classList.add('has-image');
@@ -461,19 +453,15 @@ function renderBinder() {
           pocket.appendChild(idx);
         }
       }
-
-      if (state.selectedSlot && !slot &&
-          state.selectedSlot.row === row && state.selectedSlot.col === col) {
+      if (state.selectedSlot && !slot && state.selectedSlot.row === row && state.selectedSlot.col === col) {
         pocket.classList.add('selected');
       }
       if (state.rangeSelection) {
         const rs = state.rangeSelection;
-        if (row >= rs.startRow && row <= rs.endRow &&
-            col >= rs.startCol && col <= rs.endCol) {
+        if (row >= rs.startRow && row <= rs.endRow && col >= rs.startCol && col <= rs.endCol) {
           pocket.classList.add('range-selected');
         }
       }
-
       pocket.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         if (e.shiftKey && state.selectedSlot) {
@@ -487,13 +475,7 @@ function renderBinder() {
         }
         // Alt-drag on an image pocket = move/swap image between slots
         if (e.altKey && slot) {
-          movingImage = {
-            fromKey: slot.key,
-            fromRow: slot.row,
-            fromCol: slot.col,
-            startX: e.clientX,
-            startY: e.clientY
-          };
+          movingImage = { fromKey: slot.key, fromRow: slot.row, fromCol: slot.col, startX: e.clientX, startY: e.clientY };
           e.preventDefault();
           return;
         }
@@ -501,7 +483,6 @@ function renderBinder() {
           rangeSelecting = { startRow: row, startCol: col, currentRow: row, currentCol: col };
         }
       });
-
       pocket.addEventListener('mouseenter', () => {
         if (rangeSelecting) {
           rangeSelecting.currentRow = row;
@@ -514,7 +495,6 @@ function renderBinder() {
           pocket.classList.add('move-target');
         }
       });
-
       pocket.addEventListener('click', (e) => {
         if (dragging) return;
         if (e.shiftKey) return;
@@ -523,22 +503,23 @@ function renderBinder() {
           else selectAt(row, col);
         }
       });
-
-      pocket.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        pocket.classList.add('drag-over');
+      pocket.addEventListener('contextmenu', (e) => {
+        // Select the clicked pocket, then open the context menu
+        const s = findSlotAt(row, col);
+        if (s) selectAt(s.row, s.col);
+        else selectAt(row, col);
+        showContextMenu(e, { row, col });
       });
+      pocket.addEventListener('dragover', (e) => { e.preventDefault(); pocket.classList.add('drag-over'); });
       pocket.addEventListener('dragleave', () => pocket.classList.remove('drag-over'));
       pocket.addEventListener('drop', (e) => {
         e.preventDefault();
         pocket.classList.remove('drag-over');
         handleDrop(e, row, col);
       });
-
       canvas.appendChild(pocket);
     }
   }
-
   // Render continuous seam bridges
   for (const key in p.images) {
     const [srow, scol] = key.split(',').map(Number);
@@ -560,7 +541,6 @@ function renderBinder() {
       }
     }
   }
-
   // Render cut seam masks
   for (const key in p.images) {
     const [srow, scol] = key.split(',').map(Number);
@@ -598,10 +578,8 @@ function renderBinder() {
       }
     }
   }
-
   // Render corner overlays for rounded corners (outer or every mode)
   renderCornerOverlays(canvas);
-
   // Selected slot outline (on top of everything)
   if (state.selectedSlot) {
     const { row, col } = state.selectedSlot;
@@ -620,7 +598,6 @@ function renderBinder() {
       canvas.appendChild(outline);
     }
   }
-
   // Seam toggle buttons (horizontal)
   for (let row = 0; row < p.rows; row++) {
     for (let s = 0; s < p.cols - 1; s++) {
@@ -632,10 +609,7 @@ function renderBinder() {
       seam.style.width = Math.max(6, p.seamH * scale) + 'px';
       seam.style.height = (p.pocketH * scale) + 'px';
       seam.title = 'H-seam col ' + (s + 1) + '-' + (s + 2) + ': ' + p.seamsH[s];
-      seam.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleSeam('h', s);
-      });
+      seam.addEventListener('click', (e) => { e.stopPropagation(); toggleSeam('h', s); });
       canvas.appendChild(seam);
     }
   }
@@ -650,14 +624,10 @@ function renderBinder() {
       seam.style.width = (p.pocketW * scale) + 'px';
       seam.style.height = Math.max(6, p.seamV * scale) + 'px';
       seam.title = 'V-seam row ' + (s + 1) + '-' + (s + 2) + ': ' + p.seamsV[s];
-      seam.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleSeam('v', s);
-      });
+      seam.addEventListener('click', (e) => { e.stopPropagation(); toggleSeam('v', s); });
       canvas.appendChild(seam);
     }
   }
-
   updateProperties();
 }
 
@@ -745,8 +715,8 @@ function updateProperties() {
     const sh = img.slotH || 1;
     const slotMm = slotSizeMm(sw, sh);
     props.innerHTML = '<div style="font-size:13px">Image: R' + (row + 1) + 'C' + (col + 1) + '</div>' +
-                      '<div style="font-size:11px;color:#888;margin-top:4px">Slot: ' + sw + 'x' + sh + ' pockets = ' + slotMm.w.toFixed(1) + 'x' + slotMm.h.toFixed(1) + ' mm</div>' +
-                      '<div style="font-size:11px;color:#888">Image width: ' + img.widthMm.toFixed(1) + ' mm</div>';
+      '<div style="font-size:11px;color:#888;margin-top:4px">Slot: ' + sw + 'x' + sh + ' pockets = ' + slotMm.w.toFixed(1) + 'x' + slotMm.h.toFixed(1) + ' mm</div>' +
+      '<div style="font-size:11px;color:#888">Image width: ' + img.widthMm.toFixed(1) + ' mm</div>';
     imgSection.classList.remove('hidden');
     document.getElementById('slot-w').value = sw;
     document.getElementById('slot-h').value = sh;
@@ -857,13 +827,11 @@ function toggleIntentionalEmpty() {
   const { row, col } = state.selectedSlot;
   const p = currentPage();
   if (!p.emptyPockets) p.emptyPockets = [];
-
   // Cannot mark a pocket that has an image
   if (findSlotAt(row, col)) {
     setStatus('Remove image first to mark as empty');
     return;
   }
-
   // If range selected, toggle all pockets in the range
   if (state.rangeSelection) {
     const rs = state.rangeSelection;
@@ -885,7 +853,6 @@ function toggleIntentionalEmpty() {
     renderBinder();
     return;
   }
-
   // Single pocket toggle
   const key = row + ',' + col;
   const idx = p.emptyPockets.indexOf(key);
@@ -905,12 +872,8 @@ function copyImageSettings() {
   const img = currentPage().images[key];
   if (!img) return;
   state.clipboard = {
-    widthMm: img.widthMm,
-    xMm: img.xMm,
-    yMm: img.yMm,
-    rotate: img.rotate,
-    src: img.src,
-    _naturalRatio: img._naturalRatio
+    widthMm: img.widthMm, xMm: img.xMm, yMm: img.yMm, rotate: img.rotate,
+    src: img.src, _naturalRatio: img._naturalRatio
   };
   updateClipboardIndicator();
   setStatus('Crop copied (image width ' + img.widthMm.toFixed(1) + ' mm)');
@@ -937,14 +900,8 @@ function pasteImageSettings() {
     if (!isAreaFree(row, col, sw, sh, null)) { sw = 1; sh = 1; }
   }
   p.images[key] = {
-    src: cb.src,
-    widthMm: cb.widthMm,
-    xMm: cb.xMm,
-    yMm: cb.yMm,
-    rotate: cb.rotate,
-    _naturalRatio: cb._naturalRatio,
-    slotW: sw,
-    slotH: sh
+    src: cb.src, widthMm: cb.widthMm, xMm: cb.xMm, yMm: cb.yMm, rotate: cb.rotate,
+    _naturalRatio: cb._naturalRatio, slotW: sw, slotH: sh
   };
   clampImage(p.images[key]);
   // Remove intentional-empty markings covered by this paste
@@ -962,51 +919,191 @@ function pasteImageSettings() {
   setStatus('Crop pasted (' + cb.widthMm.toFixed(1) + ' mm)');
 }
 
-function duplicateToNeighbor(dir) {
+// ============================================================
+// EXPAND SLOT (grow current slot by one pocket)
+// Replaces the old duplicate-to-neighbor behavior: instead of
+// creating a separate slot, this grows the current slot so the
+// same image spans the extra pocket as one unified piece.
+// ============================================================
+function expandSlot(dir) {
   if (!state.selectedSlot) return;
   const { row, col } = state.selectedSlot;
   const key = row + ',' + col;
   const p = currentPage();
-  const src = p.images[key];
-  if (!src) return;
-  const sw = src.slotW || 1;
-  const sh = src.slotH || 1;
-  let newRow = row, newCol = col;
-  let xShift = 0, yShift = 0;
-  const slotMm = slotSizeMm(sw, sh);
-  if (dir === 'right') { newCol = col + sw; xShift = -(slotMm.w + p.seamH); }
-  else if (dir === 'left') { newCol = col - sw; xShift = slotMm.w + p.seamH; }
-  else if (dir === 'down') { newRow = row + sh; yShift = -(slotMm.h + p.seamV); }
-  else if (dir === 'up') { newRow = row - sh; yShift = slotMm.h + p.seamV; }
-  if (!isAreaFree(newRow, newCol, sw, sh, null)) {
-    setStatus('Neighbor area does not fit or is occupied');
+  const img = p.images[key];
+  if (!img) {
+    setStatus('Select an image slot to expand');
     return;
   }
+  const sw = img.slotW || 1;
+  const sh = img.slotH || 1;
+  let newRow = row, newCol = col, newW = sw, newH = sh;
+
+  if (dir === 'right') {
+    newW = sw + 1;
+  } else if (dir === 'down') {
+    newH = sh + 1;
+  } else if (dir === 'left') {
+    newCol = col - 1;
+    newW = sw + 1;
+  } else if (dir === 'up') {
+    newRow = row - 1;
+    newH = sh + 1;
+  }
+
+  // Bounds and occupancy check for the grown area, ignoring this slot itself
+  if (!isAreaFree(newRow, newCol, newW, newH, key)) {
+    setStatus('Cannot expand ' + dir + ': edge reached or space occupied');
+    return;
+  }
+
+  // If the origin moved (left/up), relocate the image to the new origin key
   const newKey = newRow + ',' + newCol;
-  p.images[newKey] = {
-    src: src.src,
-    widthMm: src.widthMm,
-    xMm: src.xMm + xShift,
-    yMm: src.yMm + yShift,
-    rotate: src.rotate,
-    _naturalRatio: src._naturalRatio,
-    slotW: sw,
-    slotH: sh
-  };
-  clampImage(p.images[newKey]);
-  // Remove intentional-empty markings covered by the duplicate
+  if (newKey !== key) {
+    delete p.images[key];
+    // Shift the image offset so the visible content stays in place
+    if (dir === 'left') {
+      img.xMm += p.pocketW + p.seamH;
+    } else if (dir === 'up') {
+      img.yMm += p.pocketH + p.seamV;
+    }
+    p.images[newKey] = img;
+  }
+  img.slotW = newW;
+  img.slotH = newH;
+  clampImage(img);
+
+  // Remove intentional-empty markings covered by the grown slot
   if (p.emptyPockets && p.emptyPockets.length > 0) {
-    for (let r = newRow; r < newRow + sh; r++) {
-      for (let c = newCol; c < newCol + sw; c++) {
+    for (let r = newRow; r < newRow + newH; r++) {
+      for (let c = newCol; c < newCol + newW; c++) {
         const ek = r + ',' + c;
         const idx = p.emptyPockets.indexOf(ek);
         if (idx >= 0) p.emptyPockets.splice(idx, 1);
       }
     }
   }
+
   state.selectedSlot = { row: newRow, col: newCol };
   renderBinder();
-  setStatus('Duplicated ' + dir);
+  setStatus('Expanded ' + dir + ' to ' + newW + 'x' + newH);
+}
+
+// ============================================================
+// CONTEXT MENU (right-click on pockets)
+// ============================================================
+function buildContextItems(ctx) {
+  const p = currentPage();
+  const key = ctx.row + ',' + ctx.col;
+  const slot = findSlotAt(ctx.row, ctx.col);
+  const hasImage = !!slot;
+  const isEmpty = p.emptyPockets && p.emptyPockets.includes(key);
+  const hasClipboard = !!state.clipboard;
+  const items = [];
+
+  // Empty marking (disabled when the pocket holds an image)
+  items.push({
+    label: isEmpty ? 'Unmark empty (E)' : 'Mark empty (E)',
+    disabled: hasImage,
+    action: () => toggleIntentionalEmpty()
+  });
+
+  // Remove image (only when there is one)
+  items.push({
+    label: 'Remove image (Delete)',
+    disabled: !hasImage,
+    action: () => removeImage()
+  });
+
+  items.push({ separator: true });
+
+  // Copy / paste crop
+  items.push({
+    label: 'Copy crop (Ctrl+C)',
+    disabled: !hasImage,
+    action: () => copyImageSettings()
+  });
+  items.push({
+    label: 'Paste crop (Ctrl+V)',
+    disabled: !hasClipboard,
+    action: () => pasteImageSettings()
+  });
+
+  // Expand (only meaningful when the pocket holds an image)
+  if (hasImage) {
+    items.push({ separator: true });
+    items.push({ label: 'Expand left', action: () => expandSlot('left') });
+    items.push({ label: 'Expand right', action: () => expandSlot('right') });
+    items.push({ label: 'Expand up', action: () => expandSlot('up') });
+    items.push({ label: 'Expand down', action: () => expandSlot('down') });
+  }
+
+  return items;
+}
+
+function showContextMenu(e, ctx) {
+  e.preventDefault();
+  closeContextMenu();
+  const menu = document.createElement('div');
+  menu.className = 'context-menu';
+
+  const items = buildContextItems(ctx);
+  items.forEach(it => {
+    if (it.separator) {
+      const sep = document.createElement('div');
+      sep.className = 'context-sep';
+      menu.appendChild(sep);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'context-item' + (it.disabled ? ' disabled' : '');
+    el.textContent = it.label;
+    if (!it.disabled) {
+      el.addEventListener('click', () => {
+        it.action();
+        closeContextMenu();
+      });
+    }
+    menu.appendChild(el);
+  });
+
+  // Append first so we can measure it, then clamp to viewport
+  document.body.appendChild(menu);
+  const menuW = menu.offsetWidth;
+  const menuH = menu.offsetHeight;
+  let x = e.clientX;
+  let y = e.clientY;
+  if (x + menuW > window.innerWidth) x = window.innerWidth - menuW - 4;
+  if (y + menuH > window.innerHeight) y = window.innerHeight - menuH - 4;
+  menu.style.left = Math.max(0, x) + 'px';
+  menu.style.top = Math.max(0, y) + 'px';
+
+  // Close when clicking elsewhere or pressing Escape
+  setTimeout(() => {
+    document.addEventListener('mousedown', onContextOutside, { once: true });
+    document.addEventListener('keydown', onContextEscape);
+  }, 0);
+}
+
+function onContextOutside(e) {
+  const menu = document.querySelector('.context-menu');
+  if (menu && menu.contains(e.target)) {
+    // Clicked inside; the item's own click handler will close it.
+    // Re-arm the outside listener for the next click.
+    document.addEventListener('mousedown', onContextOutside, { once: true });
+    return;
+  }
+  closeContextMenu();
+}
+
+function onContextEscape(e) {
+  if (e.key === 'Escape') closeContextMenu();
+}
+
+function closeContextMenu() {
+  const existing = document.querySelector('.context-menu');
+  if (existing) existing.remove();
+  document.removeEventListener('keydown', onContextEscape);
 }
 
 // ============================================================
@@ -1017,24 +1114,19 @@ function moveOrSwapImage(fromRow, fromCol, toRow, toCol) {
   const fromKey = fromRow + ',' + fromCol;
   const srcImg = p.images[fromKey];
   if (!srcImg) return;
-
   // Determine the target's slot (may be different origin if hovering a multi-pocket slot)
   const targetSlot = findSlotAt(toRow, toCol);
   const targetKey = targetSlot ? targetSlot.key : toRow + ',' + toCol;
   const [tRow, tCol] = targetKey.split(',').map(Number);
-
   // No-op if dropping to the same slot
   if (targetKey === fromKey) return;
-
   const srcW = srcImg.slotW || 1;
   const srcH = srcImg.slotH || 1;
-
   if (targetSlot) {
     // Swap: target has an image
     const targetImg = targetSlot.image;
     const targetW = targetImg.slotW || 1;
     const targetH = targetImg.slotH || 1;
-
     // Check that both slots can fit each other's dimensions
     // Temporarily remove both, then check availability
     delete p.images[fromKey];
@@ -1115,19 +1207,10 @@ function handleDrop(e, row, col) {
     sh = parseInt(document.getElementById('slot-h').value);
     if (!isAreaFree(row, col, sw, sh, null)) { sw = 1; sh = 1; }
   }
-
   loadAndProcessImage(file, (dataUrl) => {
     const key = targetRow + ',' + targetCol;
     const p = currentPage();
-    p.images[key] = {
-      src: dataUrl,
-      widthMm: 100,
-      xMm: 0,
-      yMm: 0,
-      rotate: 0,
-      slotW: sw,
-      slotH: sh
-    };
+    p.images[key] = { src: dataUrl, widthMm: 100, xMm: 0, yMm: 0, rotate: 0, slotW: sw, slotH: sh };
     // Remove intentional-empty markings for all pockets covered by this slot
     if (p.emptyPockets && p.emptyPockets.length > 0) {
       for (let r = targetRow; r < targetRow + sh; r++) {
@@ -1187,10 +1270,7 @@ function renderPagesList() {
     const del = document.createElement('button');
     del.className = 'del';
     del.textContent = '×';
-    del.addEventListener('click', (e) => {
-      e.stopPropagation();
-      deletePage(i);
-    });
+    del.addEventListener('click', (e) => { e.stopPropagation(); deletePage(i); });
     item.appendChild(del);
     item.addEventListener('click', () => switchPage(i));
     list.appendChild(item);
@@ -1312,10 +1392,7 @@ function loadProject(event) {
           const d = page.images[key];
           if (!d._naturalRatio) {
             const t = new Image();
-            t.onload = () => {
-              d._naturalRatio = t.width / t.height;
-              renderBinder();
-            };
+            t.onload = () => { d._naturalRatio = t.width / t.height; renderBinder(); };
             t.src = d.src;
           }
         }
@@ -1504,8 +1581,7 @@ function getPaperDimensions() {
   const orient = document.getElementById('paper-orient').value;
   const margin = parseFloat(document.getElementById('paper-margin').value) || 0;
   let w, h;
-  if (size === 'A4') { w = 210; h = 297; }
-  else { w = 297; h = 420; }
+  if (size === 'A4') { w = 210; h = 297; } else { w = 297; h = 420; }
   if (orient === 'landscape') { [w, h] = [h, w]; }
   return { w, h, margin, usableW: w - 2 * margin, usableH: h - 2 * margin, size, orient };
 }
@@ -1522,49 +1598,38 @@ function updatePrintFit() {
     return;
   }
   let maxSeam = 0;
-  state.pages.forEach(page => {
-    maxSeam = Math.max(maxSeam, page.seamH, page.seamV);
-  });
+  state.pages.forEach(page => { maxSeam = Math.max(maxSeam, page.seamH, page.seamV); });
   const gapMm = maxSeam;
   const result = packPieces(pieces, paper.usableW, paper.usableH, gapMm);
   if (result.tooLarge) {
     const p = result.tooLarge;
     resultEl.className = 'fit-result fit-bad';
     resultEl.innerHTML = '<b>Image too large for ' + paper.size + ' ' + paper.orient + '</b><br>' +
-                        p.label + ' is ' + p.widthMm.toFixed(1) + '×' + p.heightMm.toFixed(1) +
-                        ' mm which exceeds usable area (' + paper.usableW + '×' + paper.usableH + ' mm).<br><br>' +
-                        'Try A3, landscape, or smaller margins.';
+      p.label + ' is ' + p.widthMm.toFixed(1) + '×' + p.heightMm.toFixed(1) + ' mm which exceeds usable area (' + paper.usableW + '×' + paper.usableH + ' mm).<br><br>' +
+      'Try A3, landscape, or smaller margins.';
     confirmBtn.disabled = true;
     return;
   }
-
   // Calculate effective DPI per image and find the worst
   const dpiWarnings = calculateDpiWarnings();
-
   const sheetCount = result.sheets.length;
   const pieceCount = pieces.length;
-  const rotatedCount = result.sheets.reduce((sum, sheet) =>
-    sum + sheet.placements.filter(p => p.orient.rotated).length, 0);
+  const rotatedCount = result.sheets.reduce((sum, sheet) => sum + sheet.placements.filter(p => p.orient.rotated).length, 0);
   resultEl.className = 'fit-result fit-ok';
   let msg = '<b>Ready to print:</b><br>';
-  msg += pieceCount + ' image piece' + (pieceCount !== 1 ? 's' : '') +
-         ' fit on ' + sheetCount + ' ' + paper.size + ' ' + paper.orient + ' sheet' + (sheetCount !== 1 ? 's' : '');
+  msg += pieceCount + ' image piece' + (pieceCount !== 1 ? 's' : '') + ' fit on ' + sheetCount + ' ' + paper.size + ' ' + paper.orient + ' sheet' + (sheetCount !== 1 ? 's' : '');
   if (rotatedCount > 0) {
-    msg += '<br><span style="color:#FFB000">' + rotatedCount + ' piece' +
-           (rotatedCount !== 1 ? 's' : '') + ' auto-rotated to fit</span>';
+    msg += '<br><span style="color:#FFB000">' + rotatedCount + ' piece' + (rotatedCount !== 1 ? 's' : '') + ' auto-rotated to fit</span>';
   }
   msg += '<br><span style="font-size:11px;color:#888">Gap between pieces: ' + gapMm + ' mm (matches largest seam for cutting)</span>';
   if (state.cornerMode !== 'none') {
     const modeText = state.cornerMode === 'outer' ? 'outer edges' : 'every card';
-    msg += '<br><span style="font-size:11px;color:#888">Corners rounded: ' +
-           state.cornerRadius + ' mm on ' + modeText + '</span>';
+    msg += '<br><span style="font-size:11px;color:#888">Corners rounded: ' + state.cornerRadius + ' mm on ' + modeText + '</span>';
   }
-
   // Append DPI quality summary
   if (dpiWarnings.summary) {
     msg += '<br><br>' + dpiWarnings.summary;
   }
-
   resultEl.innerHTML = msg;
   // Downgrade the color if there are DPI warnings
   if (dpiWarnings.level === 'bad') {
@@ -1589,10 +1654,7 @@ function calculateDpiWarnings() {
       const sh = img.slotH || 1;
       const slotW_mm = sw * page.pocketW + (sw - 1) * page.seamH;
       const naturalPx = img._naturalPxWidth;
-      if (!naturalPx) {
-        cacheNaturalPixels(img);
-        continue;
-      }
+      if (!naturalPx) { cacheNaturalPixels(img); continue; }
       const visiblePxW = naturalPx * (slotW_mm / img.widthMm);
       const slotW_inch = slotW_mm / MM_PER_INCH;
       const dpi = Math.round(visiblePxW / slotW_inch);
@@ -1603,12 +1665,9 @@ function calculateDpiWarnings() {
       });
     }
   });
-
   if (items.length === 0) return { summary: null, level: 'ok' };
-
   const minDpi = Math.min(...items.map(i => i.dpi));
   const worst = items.find(i => i.dpi === minDpi);
-
   let level = 'ok';
   let color = '#47E6C1';
   let icon = '✓';
@@ -1624,10 +1683,8 @@ function calculateDpiWarnings() {
     icon = '⚠';
     label = 'Acceptable print quality';
   }
-
   let summary = '<b style="color:' + color + '">' + icon + ' ' + label + '</b>';
-  summary += '<br><span style="font-size:11px;color:#888">Lowest effective resolution: ' +
-             minDpi + ' DPI (' + worst.label + ')';
+  summary += '<br><span style="font-size:11px;color:#888">Lowest effective resolution: ' + minDpi + ' DPI (' + worst.label + ')';
   if (level === 'warn') {
     summary += '<br>Print will look decent but not razor-sharp. Consider a higher-resolution source image.';
   } else if (level === 'bad') {
@@ -1657,10 +1714,7 @@ function confirmPrint() {
   const paper = window._printPaper;
   const result = window._printResult;
   const gapMm = window._printGap;
-  if (!paper || !result) {
-    updatePrintFit();
-    return;
-  }
+  if (!paper || !result) { updatePrintFit(); return; }
   const styleEl = document.createElement('style');
   styleEl.id = 'dynamic-print-style';
   styleEl.textContent = '@page { size: ' + paper.size + ' ' + paper.orient + '; margin: ' + paper.margin + 'mm; }';
@@ -1710,13 +1764,11 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   pieceDiv.style.width = (orient.w * MM_TO_PX) + 'px';
   pieceDiv.style.height = (orient.h * MM_TO_PX) + 'px';
   pieceDiv.style.overflow = 'hidden';
-
   if (state.cornerMode !== 'none' && state.cornerRadius > 0) {
     if (state.cornerMode === 'outer') {
       pieceDiv.style.borderRadius = (state.cornerRadius * MM_TO_PX) + 'px';
     }
   }
-
   const imgEl = document.createElement('img');
   imgEl.src = img.src;
   imgEl.style.position = 'absolute';
@@ -1730,17 +1782,13 @@ function renderPrintPiece(sheetDiv, placement, MM_TO_PX) {
   } else {
     imgEl.style.left = '0px';
     imgEl.style.top = '0px';
-    imgEl.style.transform = 'rotate(90deg) translateY(-100%) translate(' +
-                            ((img.xMm - piece.offsetX_mm) * MM_TO_PX) + 'px, ' +
-                            ((img.yMm - piece.offsetY_mm) * MM_TO_PX) + 'px)';
+    imgEl.style.transform = 'rotate(90deg) translateY(-100%) translate(' + ((img.xMm - piece.offsetX_mm) * MM_TO_PX) + 'px, ' + ((img.yMm - piece.offsetY_mm) * MM_TO_PX) + 'px)';
     imgEl.style.transformOrigin = 'top left';
   }
   pieceDiv.appendChild(imgEl);
-
   if (state.cornerMode === 'every' && state.cornerRadius > 0) {
     renderEveryCornersForPrintPiece(pieceDiv, piece, orient, MM_TO_PX);
   }
-
   sheetDiv.appendChild(pieceDiv);
 }
 
@@ -1827,7 +1875,6 @@ function updatePhysicalInfo() {
 document.addEventListener('wheel', (e) => {
   const inCanvasArea = e.target.closest('#canvas-area');
   if (!inCanvasArea) return;
-
   if (state.selectedSlot) {
     const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
     const img = currentPage().images[key];
@@ -1850,7 +1897,6 @@ document.addEventListener('wheel', (e) => {
       }
     }
   }
-
   if (e.ctrlKey || e.metaKey) return;
   e.preventDefault();
   const deltaPercent = e.deltaY > 0 ? -10 : 10;
@@ -1861,7 +1907,6 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   const key = state.selectedSlot ? state.selectedSlot.row + ',' + state.selectedSlot.col : null;
   const img = key ? currentPage().images[key] : null;
-
   if ((e.key === 'c' || e.key === 'C') && (e.ctrlKey || e.metaKey)) {
     if (state.selectedSlot) { copyImageSettings(); e.preventDefault(); }
     return;
@@ -1870,34 +1915,22 @@ document.addEventListener('keydown', (e) => {
     if (state.selectedSlot) { pasteImageSettings(); e.preventDefault(); }
     return;
   }
-  if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
-    resetZoom();
-    e.preventDefault();
-    return;
-  }
-
+  if (e.key === '0' && (e.ctrlKey || e.metaKey)) { resetZoom(); e.preventDefault(); return; }
   if (e.key === '+' || e.key === '=') {
-    if (img) zoomImage(3);
-    else zoomView(10);
+    if (img) zoomImage(3); else zoomView(10);
     e.preventDefault();
     return;
   }
   if (e.key === '-') {
-    if (img) zoomImage(-3);
-    else zoomView(-10);
+    if (img) zoomImage(-3); else zoomView(-10);
     e.preventDefault();
     return;
   }
-
   // E: toggle intentional empty (Michi Method)
   if (e.key === 'e' || e.key === 'E') {
-    if (state.selectedSlot) {
-      toggleIntentionalEmpty();
-      e.preventDefault();
-    }
+    if (state.selectedSlot) { toggleIntentionalEmpty(); e.preventDefault(); }
     return;
   }
-
   // Delete: remove image OR unmark intentional empty
   if (e.key === 'Delete') {
     if (state.selectedSlot) {
@@ -1914,7 +1947,6 @@ document.addEventListener('keydown', (e) => {
     }
     return;
   }
-
   if (!img) return;
   const step = e.shiftKey ? 10 : 1;
   let handled = true;
@@ -1943,13 +1975,7 @@ document.addEventListener('mousedown', (e) => {
   if (!state.selectedSlot || state.selectedSlot.row !== slot.row || state.selectedSlot.col !== slot.col) return;
   const img = currentPage().images[slot.key];
   if (!img) return;
-  dragging = {
-    startX: e.clientX,
-    startY: e.clientY,
-    imgX: img.xMm,
-    imgY: img.yMm,
-    key: slot.key
-  };
+  dragging = { startX: e.clientX, startY: e.clientY, imgX: img.xMm, imgY: img.yMm, key: slot.key };
   e.preventDefault();
 });
 
@@ -1963,31 +1989,19 @@ document.addEventListener('mousemove', (e) => {
   img.yMm = dragging.imgY + dy;
   clampImage(img);
   renderBinder();
+  updateProperties();
 });
 
 document.addEventListener('mouseup', (e) => {
-  // Handle image move/swap drop first
   if (movingImage) {
-    document.querySelectorAll('.pocket.move-target').forEach(el => el.classList.remove('move-target'));
-    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
-    const targetPocket = targetEl ? targetEl.closest('.pocket') : null;
-    if (targetPocket) {
-      const toRow = parseInt(targetPocket.dataset.row);
-      const toCol = parseInt(targetPocket.dataset.col);
-      const dx = Math.abs(e.clientX - movingImage.startX);
-      const dy = Math.abs(e.clientY - movingImage.startY);
-      // Only move if the user actually dragged (more than 3px) to a different pocket
-      if ((toRow !== movingImage.fromRow || toCol !== movingImage.fromCol) && (dx > 3 || dy > 3)) {
-        moveOrSwapImage(movingImage.fromRow, movingImage.fromCol, toRow, toCol);
-      }
+    const pocket = e.target.closest('.pocket');
+    if (pocket) {
+      const r = parseInt(pocket.dataset.row);
+      const c = parseInt(pocket.dataset.col);
+      moveOrSwapImage(movingImage.fromRow, movingImage.fromCol, r, c);
     }
+    document.querySelectorAll('.pocket.move-target').forEach(el => el.classList.remove('move-target'));
     movingImage = null;
-    return;
-  }
-  if (dragging) {
-    updateProperties();
-    setTimeout(() => { dragging = null; }, 50);
-    return;
   }
   if (rangeSelecting) {
     const startR = Math.min(rangeSelecting.startRow, rangeSelecting.currentRow);
@@ -1996,51 +2010,19 @@ document.addEventListener('mouseup', (e) => {
     const endC = Math.max(rangeSelecting.startCol, rangeSelecting.currentCol);
     if (startR !== endR || startC !== endC) {
       setRangeSelection(startR, startC, endR, endC);
-    } else {
-      state.rangeSelection = null;
     }
     rangeSelecting = null;
-    document.querySelectorAll('.pocket.range-selected').forEach(el => el.classList.remove('range-selected'));
-    if (state.rangeSelection) {
-      const rs = state.rangeSelection;
-      document.querySelectorAll('.pocket').forEach(el => {
-        const r = parseInt(el.dataset.row);
-        const c = parseInt(el.dataset.col);
-        if (r >= rs.startRow && r <= rs.endRow && c >= rs.startCol && c <= rs.endCol) {
-          el.classList.add('range-selected');
-        }
-      });
-    }
   }
-});
-
-// Click on empty canvas area background clears selection
-document.getElementById('canvas-area').addEventListener('mousedown', (e) => {
-  const clickedInteractive = e.target.closest('.pocket, .seam-toggle, .seam-bridge, .slot-outline, .corner-overlay, .cut-seam-mask');
-  if (clickedInteractive) return;
-  if (e.button !== 0) return;
-  if (state.selectedSlot || state.rangeSelection) {
-    state.selectedSlot = null;
-    state.rangeSelection = null;
-    renderBinder();
-    setStatus('Selection cleared');
+  if (dragging) {
+    setTimeout(() => { dragging = null; }, 50);
   }
-});
-
-document.body.addEventListener('dragover', (e) => e.preventDefault());
-document.body.addEventListener('drop', (e) => e.preventDefault());
-
-document.getElementById('print-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'print-modal') closePrintDialog();
-});
-document.getElementById('about-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'about-modal') closeAboutDialog();
 });
 
 // ============================================================
-// STARTUP
+// INITIALIZATION
 // ============================================================
 loadPageToUI();
 renderPagesList();
-updateBinder();
-updateCorners();
+renderBinder();
+updatePhysicalInfo();
+updateClipboardIndicator();

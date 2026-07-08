@@ -1,11 +1,16 @@
 /*
-   Michify - TCG Binder Designer
-   Stylesheet
-   Copyright (c) 2026 Risto Ruuskanen
-   Licensed under the MIT License
+  Michify - TCG Binder Designer
+  Stylesheet
+  Copyright (c) 2026 Risto Ruuskanen
+  Licensed under the MIT License
 */
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: #1a1a1a;
@@ -28,7 +33,11 @@ body {
 .mt-5 { margin-top: 5px; }
 .mt-8 { margin-top: 8px; }
 .mt-20 { margin-top: 20px; }
-.duplicate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.duplicate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
 
 /* ============================================================
    HEADER
@@ -254,8 +263,8 @@ button.accent:disabled {
 /* ============================================================
    INTENTIONAL EMPTY POCKET (Michi Method)
    Diagonal hatched pattern indicating a pocket that is meant
-   to stay empty as part of the design. Only visible on canvas,
-   not in print.
+   to stay empty as part of the design.
+   Only visible on canvas, not in print.
    ============================================================ */
 .pocket.intentional-empty {
   background: repeating-linear-gradient(
@@ -268,24 +277,20 @@ button.accent:disabled {
   border: 1px dashed #aaa;
   cursor: pointer;
 }
-.pocket.intentional-empty:hover {
-  border-color: #FFB000;
-}
-.pocket.intentional-empty.selected {
-  border: 2px solid #FFB000;
-}
+.pocket.intentional-empty:hover { border-color: #FFB000; }
+.pocket.intentional-empty.selected { border: 2px solid #FFB000; }
 
 /* ============================================================
    CORNER OVERLAYS
-   Small white squares placed at piece/pocket corners to visually
-   round off the colored image content. Each overlay is a square
-   of size radiusPx × radiusPx. A radial gradient carves a
-   transparent quarter-circle out of one corner (the one facing
-   the image), while the rest of the overlay stays white.
-
-   Using `farthest-side` sizes the gradient's 100% stop to exactly
-   the opposite edge (radiusPx away), so the transparent quarter-
-   circle fills the overlay perfectly without overshoot.
+   Small white squares placed at piece/pocket corners to
+   visually round off the colored image content.
+   Each overlay is a square of size radiusPx × radiusPx.
+   A radial gradient carves a transparent quarter-circle out
+   of one corner (the one facing the image), while the rest
+   of the overlay stays white.
+   Using `farthest-side` sizes the gradient's 100% stop to
+   exactly the opposite edge (radiusPx away), so the transparent
+   quarter-circle fills the overlay perfectly without overshoot.
    ============================================================ */
 .corner-overlay {
   position: absolute;
@@ -295,31 +300,19 @@ button.accent:disabled {
 }
 .corner-overlay.tl {
   /* top-left corner: circle at bottom-right of overlay */
-  background: radial-gradient(circle farthest-side at 100% 100%,
-                              transparent 0,
-                              transparent calc(100% - 0.5px),
-                              white 100%);
+  background: radial-gradient(circle farthest-side at 100% 100%, transparent 0, transparent calc(100% - 0.5px), white 100%);
 }
 .corner-overlay.tr {
   /* top-right corner: circle at bottom-left of overlay */
-  background: radial-gradient(circle farthest-side at 0% 100%,
-                              transparent 0,
-                              transparent calc(100% - 0.5px),
-                              white 100%);
+  background: radial-gradient(circle farthest-side at 0% 100%, transparent 0, transparent calc(100% - 0.5px), white 100%);
 }
 .corner-overlay.bl {
   /* bottom-left corner: circle at top-right of overlay */
-  background: radial-gradient(circle farthest-side at 100% 0%,
-                              transparent 0,
-                              transparent calc(100% - 0.5px),
-                              white 100%);
+  background: radial-gradient(circle farthest-side at 100% 0%, transparent 0, transparent calc(100% - 0.5px), white 100%);
 }
 .corner-overlay.br {
   /* bottom-right corner: circle at top-left of overlay */
-  background: radial-gradient(circle farthest-side at 0% 0%,
-                              transparent 0,
-                              transparent calc(100% - 0.5px),
-                              white 100%);
+  background: radial-gradient(circle farthest-side at 0% 0%, transparent 0, transparent calc(100% - 0.5px), white 100%);
 }
 
 /* ============================================================
@@ -359,7 +352,11 @@ button.accent:disabled {
 /* ============================================================
    ZOOM CONTROLS
    ============================================================ */
-.zoom-controls { display: flex; gap: 5px; margin-top: 8px; }
+.zoom-controls {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
 .zoom-controls button {
   flex: 1;
   background: #333;
@@ -404,14 +401,8 @@ button.accent:disabled {
   align-items: center;
   justify-content: center;
 }
-.zoom-slider-row .zoom-btn:hover {
-  background: #3d3d3d;
-  border-color: #555;
-}
-.zoom-slider-row .zoom-btn:active {
-  background: #FFB000;
-  color: #1a1a1a;
-}
+.zoom-slider-row .zoom-btn:hover { background: #3d3d3d; border-color: #555; }
+.zoom-slider-row .zoom-btn:active { background: #FFB000; color: #1a1a1a; }
 .zoom-slider-row .zoom-value {
   color: #eaeaea;
   font-size: 12px;
@@ -422,9 +413,7 @@ button.accent:disabled {
   cursor: pointer;
   user-select: none;
 }
-.zoom-slider-row .zoom-value:hover {
-  color: #FFB000;
-}
+.zoom-slider-row .zoom-value:hover { color: #FFB000; }
 
 /* The slider itself: cross-browser custom styling */
 .zoom-slider {
@@ -474,14 +463,8 @@ button.accent:disabled {
 }
 .zoom-slider:hover::-webkit-slider-thumb { background: #ffc333; }
 .zoom-slider:hover::-moz-range-thumb { background: #ffc333; }
-.zoom-slider:active::-webkit-slider-thumb {
-  cursor: grabbing;
-  transform: scale(1.15);
-}
-.zoom-slider:active::-moz-range-thumb {
-  cursor: grabbing;
-  transform: scale(1.15);
-}
+.zoom-slider:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.15); }
+.zoom-slider:active::-moz-range-thumb { cursor: grabbing; transform: scale(1.15); }
 
 /* ============================================================
    PROPERTY SUBSECTIONS
@@ -493,7 +476,11 @@ button.accent:disabled {
   margin-bottom: 12px;
 }
 .empty-note { color: #888; font-size: 12px; }
-.physical-info-box { font-size: 11px; color: #bbb; line-height: 1.7; }
+.physical-info-box {
+  font-size: 11px;
+  color: #bbb;
+  line-height: 1.7;
+}
 
 /* ============================================================
    STATUS BAR
@@ -513,12 +500,18 @@ button.accent:disabled {
   max-width: 600px;
   text-align: center;
 }
+
 input[type="file"] { display: none; }
 
 /* ============================================================
    INFO TEXT AND LEGEND
    ============================================================ */
-.info { font-size: 11px; color: #888; margin-top: 5px; line-height: 1.4; }
+.info {
+  font-size: 11px;
+  color: #888;
+  margin-top: 5px;
+  line-height: 1.4;
+}
 .legend {
   display: flex;
   gap: 10px;
@@ -527,8 +520,16 @@ input[type="file"] { display: none; }
   margin-top: 8px;
   flex-wrap: wrap;
 }
-.legend-item { display: flex; align-items: center; gap: 4px; }
-.legend-swatch { width: 12px; height: 12px; border-radius: 2px; }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
 .swatch-cut { background: rgba(244, 50, 86, 0.6); }
 .swatch-continuous { background: rgba(71, 230, 193, 0.6); }
 .swatch-lost { background: rgba(200, 200, 200, 0.85); }
@@ -542,6 +543,7 @@ input[type="file"] { display: none; }
   );
   border: 1px solid #888;
 }
+
 .clipboard-indicator {
   display: inline-block;
   padding: 2px 6px;
@@ -589,18 +591,15 @@ input[type="file"] { display: none; }
 
 /* ============================================================
    MODAL LINKS AND BUTTONS
-   Uses :not(.modal-btn) for inline links, and higher specificity
-   (.modal a.modal-btn) for action buttons.
+   Uses :not(.modal-btn) for inline links, and higher
+   specificity (.modal a.modal-btn) for action buttons.
    ============================================================ */
 .modal a:not(.modal-btn) {
   color: #FFB000;
   text-decoration: underline;
   font-weight: 500;
 }
-.modal a:not(.modal-btn):hover {
-  color: #ffc333;
-  text-decoration: none;
-}
+.modal a:not(.modal-btn):hover { color: #ffc333; text-decoration: none; }
 .modal .attribution {
   font-size: 12px;
   color: #999;
@@ -635,21 +634,38 @@ input[type="file"] { display: none; }
   font-weight: 600;
   border-color: #FFB000;
 }
-.modal a.modal-btn-accent:hover {
-  background: #ffc333;
-  color: #1a1a1a;
-  border-color: #ffc333;
-}
+.modal a.modal-btn-accent:hover { background: #ffc333; color: #1a1a1a; border-color: #ffc333; }
 .modal a.modal-btn-secondary {
   background: #333;
   color: #eaeaea;
   border-color: #444;
 }
-.modal a.modal-btn-secondary:hover {
-  background: #3d3d3d;
-  color: #eaeaea;
-  border-color: #555;
+.modal a.modal-btn-secondary:hover { background: #3d3d3d; color: #eaeaea; border-color: #555; }
+
+/* ============================================================
+   CONTEXT MENU (right-click on pockets)
+   ============================================================ */
+.context-menu {
+  position: fixed;
+  z-index: 3000;
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
 }
+.context-item {
+  padding: 7px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #eaeaea;
+}
+.context-item:hover { background: #3d3d3d; }
+.context-item.disabled { color: #666; cursor: default; }
+.context-item.disabled:hover { background: transparent; }
+.context-sep { height: 1px; background: #444; margin: 4px 6px; }
 
 /* ============================================================
    PRINT FIT INDICATOR
