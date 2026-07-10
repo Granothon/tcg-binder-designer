@@ -43,6 +43,14 @@ window.addEventListener('load', async () => {
     hintsCb.checked = true;
     fr.updateHintsVisibility();
 
+    // Expandable info hints (details/summary)
+    const det = doc.querySelector('details.info');
+    log('info details collapsed by default', !!det && !det.open);
+    det.querySelector('summary').dispatchEvent(new fr.MouseEvent('click', { bubbles: true, cancelable: true }));
+    await sleep(50);
+    log('info expands on summary click', det.open);
+    det.open = false;
+
     // Collapsible sidebar sections
     const qualityH2 = doc.querySelector('h2[data-section="quality"]');
     log('image quality collapsed by default', qualityH2.classList.contains('collapsed'));

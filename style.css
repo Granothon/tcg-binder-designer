@@ -495,6 +495,24 @@ input[type="file"] { display: none; }
   line-height: 1.4;
 }
 body.hints-hidden .info { display: none; }
+
+/* Expandable hint: one-sentence summary with an (i) icon, click to
+   reveal the full explanation inline (native <details>, no JS). */
+details.info summary {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+details.info summary::-webkit-details-marker { display: none; }
+details.info summary::after {
+  content: 'ⓘ';
+  margin-left: 5px;
+  color: #FFB000;
+  opacity: 0.6;
+}
+details.info summary:hover::after { opacity: 1; }
+details.info[open] summary::after { content: '▴'; }
+.info-detail { margin-top: 4px; }
 .hints-row {
   margin-top: 20px;
   padding-top: 10px;

@@ -95,9 +95,12 @@
           <label>Radius (mm)</label>
           <input type="number" id="corner-radius" value="3.18" min="0.5" max="10" step="0.01" onchange="updateCorners()" title="3.18 mm matches the official TCG card corner radius">
         </div>
-        <div class="info">
-          Preview shows rounded corners and they carry over to print. No corner cutter tool needed.
-        </div>
+        <details class="info">
+          <summary>Rounded corners show in both preview and print.</summary>
+          <div class="info-detail">
+            The default 3.18 mm radius matches the official TCG card corner (1/8 inch), so printed inserts look like real cards. On white paper the rounding blends into the page; on other paper the corners act as cutting guides. No corner cutter tool needed.
+          </div>
+        </details>
       </div>
     </div>
 
@@ -112,9 +115,12 @@
             <option value="0">Original (no downscale)</option>
           </select>
         </div>
-        <div class="info">
-          Large images are downscaled when added, to keep the app and save files fast. Affects only images added afterwards. 3000 px ≈ 300 DPI across a full 3×3 spread; pick High or Original before adding images meant for even larger continuous spreads.
-        </div>
+        <details class="info">
+          <summary>Large images are downscaled when added.</summary>
+          <div class="info-detail">
+            Keeps the app and save files fast. Affects only images added afterwards — already placed images keep their resolution, and the original file is not stored. 3000 px ≈ 300 DPI across a full 3×3 spread; pick High or Original before adding images meant for even larger continuous spreads.
+          </div>
+        </details>
       </div>
     </div>
 
@@ -141,9 +147,12 @@
         <button class="secondary full-width mt-8" id="mark-empty-btn" onclick="toggleIntentionalEmpty()" title="Toggle intentional empty (E)">
           Toggle intentional empty
         </button>
-        <div class="info">
-          Marks a pocket as intentionally empty (Michi Method). Shows as a hatched pattern on canvas, stays clean in print. Press <b>E</b> to toggle.
-        </div>
+        <details class="info">
+          <summary>Marks a pocket as intentionally empty. Press <b>E</b> to toggle.</summary>
+          <div class="info-detail">
+            Intentional empties are part of a Michi Method composition: they show as a hatched pattern on canvas but stay clean in print. Dropping an image on a marked pocket clears the mark.
+          </div>
+        </details>
       </div>
     </div>
 
@@ -183,7 +192,12 @@
           <button class="secondary" onclick="trimSlot('up')" title="Remove the top pocket row from this slot">Trim top</button>
           <button class="secondary" onclick="trimSlot('down')" title="Remove the bottom pocket row from this slot">Trim bottom</button>
         </div>
-        <div class="info">Expand grows this slot by one pocket in the chosen direction; Trim removes the outermost pocket from that side, so expanding right and trimming right returns to where you started. Use Copy/Paste crop to place the same image in a separate pocket.</div>
+        <details class="info">
+          <summary>Expand grows this slot by one pocket; Trim shrinks it back.</summary>
+          <div class="info-detail">
+            The image spans the grown slot as one unified piece, and expanding right then trimming right returns to where you started. To put the same image in a separate, independently adjustable pocket, use Copy/Paste crop instead.
+          </div>
+        </details>
       </div>
     </div>
 
@@ -223,11 +237,14 @@
         <label>Measured V bar (mm)</label>
         <input type="number" id="scale-comp-v" value="100" min="90" max="110" step="0.1" onchange="updateScaleCompensation()" title="Measured length of the vertical calibration bar. Output is counter-scaled to cancel the error; 100 = no compensation.">
       </div>
-      <div class="info">
-        Scale compensation for precise printing: print the calibration page, measure both 100 mm bars,
-        and enter the measured lengths above. Michify counter-scales the output to cancel your printer's
-        error. Leave at 100 for no compensation. Saved per browser, not per project.
-      </div>
+      <details class="info">
+        <summary>Scale compensation for precision printing (100 = off).</summary>
+        <div class="info-detail">
+          Print the calibration page and measure both 100 mm bars. Enter the measured lengths above;
+          Michify counter-scales the output per axis to cancel your printer's error. Reprint the
+          calibration page to verify. Saved per browser, not per project.
+        </div>
+      </details>
       <div id="print-fit-result"></div>
       <div class="modal-actions">
         <button class="secondary" onclick="printCalibration()" title="Print a 100 mm test ruler to verify your printer is not scaling the page">Calibration page</button>
