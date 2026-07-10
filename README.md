@@ -14,6 +14,9 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 
 - **Custom binder dimensions** — set exact pocket width, height, and seam sizes for your specific binder
 - **Multi-pocket image slots** — design artwork spanning multiple pockets in any rectangular configuration
+- **Undo / redo** — Ctrl+Z / Ctrl+Y (or the header buttons) step back through every edit
+- **Autosave & session restore** — work is continuously saved in your browser; if the tab closes, Michify offers to restore it on the next visit
+- **Flexible image input** — drag & drop files, click **Add image…** to browse (multiple files fill free pockets automatically), or paste an image straight from the clipboard with Ctrl+V
 - **Expand slots** — grow an image slot one pocket at a time (left, right, up, down) so a single image spans the extra pockets as one unified piece
 - **Michi Method support** — handle cut and continuous seams (side-loading binders where pockets face each other) and mark pockets as intentionally empty for balanced compositions
 - **Right-click context menu** — quick access to the most common actions (mark/unmark empty, remove image, copy/paste crop, and expand) right where you're working
@@ -24,6 +27,7 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 - **Rounded corners** — optional preview and print output with rounded corners; default radius matches the official TCG card standard
 - **Print quality guidance** — the print dialog warns you if any image would look soft at its intended size
 - **Smart bin-packing printing** — automatically arranges pieces on A4/A3 sheets with proper cutting margins
+- **Print calibration page** — a 100 mm test ruler that verifies your printer is not scaling the page before you commit paper and ink
 
 ## Getting started
 
@@ -34,14 +38,24 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 5. Configure seams by clicking them (red = cut, teal = continuous)
 6. Choose a corner style (no rounding by default, or rounded corners with adjustable radius)
 7. Click or drag over pockets to select an area
-8. Drop an image onto the selected area, or press E to mark the pocket as intentionally empty
+8. Drop an image onto the selected area (or click **Add image…**, or paste one with Ctrl+V), or press E to mark the pocket as intentionally empty
 9. Adjust the crop with your mouse (drag to pan, wheel to zoom) or the arrow keys
 10. Use **Expand slot** in the right panel to grow the image across neighboring pockets, or right-click a pocket for quick actions
 11. Click Print / PDF to export at the exact size for your binder
 
+Your work is autosaved in the browser as you go, and Ctrl+Z undoes any misstep. Use **Save JSON** for backups and for moving projects between devices.
+
 ## Keyboard shortcuts
 
 Michify supports common shortcuts familiar from other design and office tools.
+
+### Global
+
+| Shortcut | Action |
+|---|---|
+| Ctrl+Z / Cmd+Z | Undo |
+| Ctrl+Y or Ctrl+Shift+Z | Redo |
+| Ctrl+V with an image in the clipboard | Paste the image into the selected pocket |
 
 ### View zoom (when no image is selected)
 
@@ -60,7 +74,7 @@ Michify supports common shortcuts familiar from other design and office tools.
 | Scroll wheel over the slot | Zoom the image inside the slot |
 | + / - | Zoom the image by 3 mm |
 | Arrow keys | Nudge the image by 1 mm (Shift for 10 mm) |
-| Ctrl+C / Ctrl+V | Copy / paste image crops between slots |
+| Ctrl+C / Ctrl+V | Copy / paste image crops between slots (Ctrl+V pastes a clipboard image instead when one was copied more recently) |
 | Delete | Remove the image from the selected slot |
 
 ### Selection
@@ -126,6 +140,7 @@ Michify handles the complex parts of printing automatically.
 - **Cutting margins** — the gap between printed pieces matches your binder's seam width, so you can cut straight lines with a paper cutter
 - **Corner rounding** — enable rounded corners in the sidebar to add professional-looking rounded corners automatically. Works as both visual style and cutting guide.
 - **Physical accuracy** — all measurements are in real millimeters. Print at 100% scale (not "fit to page") for pixel-perfect results.
+- **Calibration** — not sure your printer honors 100% scale? Click **Calibration page** in the print dialog and measure the printed 100 mm ruler before printing your inserts.
 
 The print dialog estimates each image's effective DPI and warns you if any would look soft or pixelated. If you see a low-DPI warning, the fix is a higher-resolution source image, not a Michify setting.
 
@@ -133,16 +148,33 @@ For best results, use matte cardstock (around 300 gsm) rather than regular print
 
 ## Development
 
-Michify is a single-page web app built with vanilla HTML, CSS, and JavaScript. No frameworks, no build step, no dependencies.
+Michify is a single-page web app built with vanilla HTML, CSS, and JavaScript. No frameworks, no build step, no dependencies — it runs on any static host (the live app is plain GitHub Pages).
 
     tcg-binder-designer/
-    ├── index.html    HTML structure
-    ├── style.css     Styling and layout
-    ├── app.js        Application logic
-    ├── README.md     This file
-    └── LICENSE       MIT license
+    ├── index.html          HTML structure
+    ├── style.css           Styling and layout
+    ├── js/
+    │   ├── main.js         UI, rendering, printing, autosave (browser entry point)
+    │   ├── state.js        Project state, undo history, save-file format
+    │   ├── geometry.js     Pure geometry and image placement math
+    │   ├── packing.js      Print-sheet bin packing
+    │   └── storage.js      IndexedDB autosave
+    ├── test/               Unit tests + browser test runners
+    ├── package.json        Test script only — the app has no dependencies
+    ├── README.md           This file
+    └── LICENSE             MIT license
 
-To run locally, just open index.html in a browser. For development with hot reload, use VSCode's Live Server extension or any local static server.
+The code is split into ES modules, so run it from a local web server rather than opening index.html directly from disk (browsers block module loading over file://). VSCode's Live Server extension or any static server works:
+
+    python -m http.server   # then open http://localhost:8000
+
+### Testing
+
+The pure logic (geometry, image placement, bin packing, undo history, save format) is covered by unit tests:
+
+- `npm test` (or `node --test test/`) runs them in Node — no packages to install
+- `test/browser.html` runs the same test files in a browser, if you don't have Node
+- `test/e2e.html` drives the real app in an iframe: pastes an image, rotates it, checks undo/redo and autosave
 
 ## Contributing
 

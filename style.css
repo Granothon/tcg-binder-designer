@@ -719,6 +719,12 @@ input[type="file"] { display: none; }
     position: relative;
   }
   .print-page:last-child { page-break-after: auto; }
+  /* Corner overlays are background gradients; ask the browser to print them
+     even when "background graphics" is off. */
+  .print-page, .print-page * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   .pocket-index, .seam-toggle, .slot-outline { display: none !important; }
   .pocket, .pocket.has-image, .pocket.intentional-empty {
     border: none !important;

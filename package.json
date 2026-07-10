@@ -1,0 +1,11 @@
+{
+  "name": "tcg-binder-designer",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Michify - an open-source binder art designer for TCG collections. The app itself has no dependencies and no build step; this file only exists to run the unit tests.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Michify e2e smoke test</title></head>
+<!--
+  Drives the real app in an iframe through its actual event handlers:
+  paste an image, rotate it, undo/redo, autosave. Serve the repo with any
+  static server and open this page; results appear below the iframe.
+  (The /__report fetch is for automated runs and fails silently otherwise.)
+-->
+<body>
+<iframe id="app" src="../index.html" style="width:1200px;height:900px"></iframe>
+<pre id="out">running…</pre>
+<script>
+const out = [];
+function report() { try { fetch('/__report', { method: 'POST', body: out.join('\n') }); } catch {} }
+function log(name, ok, extra) { out.push((ok ? 'ok   ' : 'FAIL ') + name + (extra ? ' :: ' + extra : '')); report(); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+out.push('harness loaded'); report();
+async function makeImageFile(w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.fillStyle = 'red'; ctx.fillRect(0, 0, w, h);
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  return new File([blob], 't.png', { type: 'image/png' });
+}
+window.addEventListener('load', async () => {
+  await sleep(500);
+  const fr = document.getElementById('app').contentWindow;
+  const doc = fr.document;
+  try {
+    log('renders 9 pockets', doc.querySelectorAll('.pocket').length === 9);
+    log('add-image input exists', !!doc.getElementById('add-image-file'));
+
+    // Change rows to 4, then undo
+    doc.getElementById('rows').value = 4;
+    fr.updateBinder();
+    log('rows=4 renders 12 pockets', doc.querySelectorAll('.pocket').length === 12);
+    fr.undoAction();
+    log('undo restores 9 pockets', doc.querySelectorAll('.pocket').length === 9,
+        'pockets=' + doc.querySelectorAll('.pocket').length + ' rowsInput=' + doc.getElementById('rows').value);
+
+    // Select pocket (0,0) and paste an image from the "clipboard"
+    doc.querySelector('.pocket[data-row="0"][data-col="0"]').dispatchEvent(new fr.MouseEvent('click', { bubbles: true }));
+    const file = await makeImageFile(400, 200); // ratio 2
+    const dt = new fr.DataTransfer();
+    dt.items.add(file);
+    doc.dispatchEvent(new fr.ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    await sleep(700);
+    let imgEl = doc.querySelector('img[data-slot-key="0,0"]');
+    log('pasted image renders', !!imgEl);
+    // cover fit of a ratio-2 image in a 68x93 slot: widthMm = 186 -> 558px at 100% zoom
+    log('cover fit width 558px', imgEl && Math.abs(parseFloat(imgEl.style.width) - 558) < 1,
+        imgEl && ('width=' + imgEl.style.width + ' left=' + imgEl.style.left));
+
+    // Rotate 90 degrees via the properties panel
+    doc.querySelector('.pocket[data-row="0"][data-col="0"]').dispatchEvent(new fr.MouseEvent('click', { bubbles: true }));
+    doc.getElementById('img-rotate').value = '90';
+    fr.updateImageProps();
+    await sleep(100);
+    imgEl = doc.querySelector('img[data-slot-key="0,0"]');
+    log('rotate 90 transform', imgEl && imgEl.style.transform === 'rotate(90deg)', imgEl && imgEl.style.transform);
+    // element width becomes fw*ratio = 372mm -> 1116px, left shifts to (x+fw)*3 = 381px
+    log('rotate 90 element width 1116px', imgEl && Math.abs(parseFloat(imgEl.style.width) - 1116) < 1,
+        imgEl && ('width=' + imgEl.style.width));
+    log('rotate 90 left compensation 381px', imgEl && Math.abs(parseFloat(imgEl.style.left) - 381) < 1,
+        imgEl && ('left=' + imgEl.style.left));
+
+    // Undo rotate, then undo paste
+    fr.undoAction();
+    await sleep(50);
+    imgEl = doc.querySelector('img[data-slot-key="0,0"]');
+    log('undo rotate back to 0', imgEl && imgEl.style.transform === 'rotate(0deg)', imgEl && imgEl.style.transform);
+    fr.undoAction();
+    await sleep(50);
+    log('undo paste removes image', !doc.querySelector('img[data-slot-key]'));
+
+    // Redo brings the image back and autosave persists it
+    fr.redoAction();
+    await sleep(50);
+    log('redo restores image', !!doc.querySelector('img[data-slot-key="0,0"]'));
+    await sleep(2200); // autosave debounce is 1.5s
+    const saved = await Promise.race([
+      (async () => {
+        const db = await new Promise((res, rej) => {
+          const rq = indexedDB.open('michify', 1);
+          rq.onsuccess = () => res(rq.result);
+          rq.onerror = () => rej(rq.error);
+        });
+        const val = await new Promise((res, rej) => {
+          const tx = db.transaction('autosave', 'readonly');
+          const rq = tx.objectStore('autosave').get('current');
+          rq.onsuccess = () => res(rq.result);
+          rq.onerror = () => rej(rq.error);
+        });
+        db.close();
+        return val;
+      })(),
+      sleep(3000).then(() => 'timeout')
+    ]);
+    log('autosave written with image',
+        saved !== 'timeout' && !!saved && !!saved.pages && !!saved.pages[0].images['0,0'],
+        saved === 'timeout' ? 'indexeddb timeout' : '');
+  } catch (e) {
+    log('EXCEPTION', false, e.stack || String(e));
+  }
+  const fails = out.filter(l => l.startsWith('FAIL')).length;
+  out.push('');
+  out.push('RESULT: ' + (fails ? 'FAIL' : 'PASS'));
+  const text = out.join('\n');
+  document.getElementById('out').textContent = text;
+  document.title = 'e2e: ' + (fails ? 'FAIL' : 'PASS');
+  try { await fetch('/__report', { method: 'POST', body: text }); } catch {}
+});
+</script>
+</body>
+</html>

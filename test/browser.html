@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Michify unit tests</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "node:test": "./shim/node-test.js",
+        "node:assert/strict": "./shim/node-assert.js"
+      }
+    }
+  </script>
+  <style>
+    body { font-family: monospace; background: #1a1a1a; color: #eaeaea; padding: 20px; }
+    pre { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Michify unit tests (browser runner)</h1>
+  <p>Runs the same test files as <code>node --test</code>. Serve the repo with any static server and open this page.</p>
+  <pre id="out">running…</pre>
+  <script type="module">
+    import { results } from './shim/node-test.js';
+    const files = ['./geometry.test.mjs', './packing.test.mjs', './state.test.mjs'];
+    let loadError = null;
+    for (const f of files) {
+      try {
+        await import(f);
+      } catch (e) {
+        loadError = f + ': ' + (e.stack || e);
+        break;
+      }
+    }
+    const failed = results.filter(r => !r.ok);
+    let text = results
+      .map(r => (r.ok ? 'ok   ' : 'FAIL ') + r.name + (r.ok ? '' : '\n      ' + r.error))
+      .join('\n');
+    if (loadError) text += '\nLOAD ERROR ' + loadError;
+    const pass = !loadError && failed.length === 0;
+    text += '\n\nRESULT: ' + (pass ? 'PASS' : 'FAIL') + ' (' + (results.length - failed.length) + '/' + results.length + ' passed)';
+    document.getElementById('out').textContent = text;
+    document.title = 'Michify tests: ' + (pass ? 'PASS' : 'FAIL');
+  </script>
+</body>
+</html>

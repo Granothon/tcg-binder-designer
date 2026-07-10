@@ -22,6 +22,8 @@
     <button onclick="document.getElementById('load-file').click()">Open JSON</button>
     <button onclick="saveProject()">Save JSON</button>
     <input type="file" id="load-file" accept=".json" onchange="loadProject(event)">
+    <button onclick="undoAction()" title="Undo (Ctrl+Z)">↶ Undo</button>
+    <button onclick="redoAction()" title="Redo (Ctrl+Y)">↷ Redo</button>
     <div class="spacer"></div>
     <a href="https://ko-fi.com/granothon" target="_blank" rel="noopener" class="support-link">
       ☕ Buy me a coffee
@@ -117,6 +119,10 @@
       <div class="subsection">
         <div class="field"><label>Width</label><input type="number" id="slot-w" min="1" max="5" value="1" onchange="resizeSlot()"></div>
         <div class="field"><label>Height</label><input type="number" id="slot-h" min="1" max="5" value="1" onchange="resizeSlot()"></div>
+        <button class="accent full-width mt-8" onclick="document.getElementById('add-image-file').click()" title="Add images from files. You can also drag &amp; drop or paste (Ctrl+V) an image.">
+          Add image…
+        </button>
+        <input type="file" id="add-image-file" accept="image/*" multiple onchange="addImagesFromInput(event)">
         <button class="secondary full-width mt-8" id="mark-empty-btn" onclick="toggleIntentionalEmpty()" title="Toggle intentional empty (E)">
           Toggle intentional empty
         </button>
@@ -139,7 +145,7 @@
           <button onclick="zoomImage(5)" title="Zoom in">+</button>
         </div>
         <button class="secondary full-width mt-8" onclick="removeImage()">Remove image</button>
-        <div class="info">Wheel = zoom, drag = pan, arrows = 1mm (shift = 10mm).</div>
+        <div class="info">Wheel = zoom, drag = pan, arrows = 1mm (shift = 10mm), Ctrl+Z = undo.</div>
       </div>
 
       <h2 class="mt-20">Clone</h2>
@@ -190,6 +196,7 @@
       </div>
       <div id="print-fit-result"></div>
       <div class="modal-actions">
+        <button class="secondary" onclick="printCalibration()" title="Print a 100 mm test ruler to verify your printer is not scaling the page">Calibration page</button>
         <button class="secondary" onclick="closePrintDialog()">Cancel</button>
         <button class="accent" id="print-confirm" onclick="confirmPrint()">Print</button>
       </div>
@@ -205,7 +212,7 @@
         Design custom inserts, plan Michi Method spreads, and export print-ready layouts with millimeter-accurate dimensions.
       </p>
       <p class="modal-para">
-        <b>Version:</b> 3.3<br>
+        <b>Version:</b> 4.0<br>
         <b>License:</b> MIT (free and open source)<br>
         <b>Author:</b> Risto Ruuskanen
       </p>
@@ -232,6 +239,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
