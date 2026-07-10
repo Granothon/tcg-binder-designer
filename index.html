@@ -162,7 +162,13 @@
           <button class="secondary" onclick="expandSlot('up')">↑ Up</button>
           <button class="secondary" onclick="expandSlot('down')">↓ Down</button>
         </div>
-        <div class="info">Grows this slot by one pocket in the chosen direction and refits the image as one piece. Use Copy/Paste crop to place the same image in a separate pocket.</div>
+        <div class="duplicate-grid mt-5">
+          <button class="secondary" onclick="trimSlot('left')" title="Remove the leftmost pocket column from this slot">Trim left</button>
+          <button class="secondary" onclick="trimSlot('right')" title="Remove the rightmost pocket column from this slot">Trim right</button>
+          <button class="secondary" onclick="trimSlot('up')" title="Remove the top pocket row from this slot">Trim top</button>
+          <button class="secondary" onclick="trimSlot('down')" title="Remove the bottom pocket row from this slot">Trim bottom</button>
+        </div>
+        <div class="info">Expand grows this slot by one pocket in the chosen direction; Trim removes the outermost pocket from that side, so expanding right and trimming right returns to where you started. Use Copy/Paste crop to place the same image in a separate pocket.</div>
       </div>
     </div>
 
@@ -225,7 +231,7 @@
         Design custom inserts, plan Michi Method spreads, and export print-ready layouts with millimeter-accurate dimensions.
       </p>
       <p class="modal-para">
-        <b>Version:</b> 4.1<br>
+        <b>Version:</b> 4.2<br>
         <b>License:</b> MIT (free and open source)<br>
         <b>Author:</b> Risto Ruuskanen
       </p>

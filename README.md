@@ -17,7 +17,7 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 - **Undo / redo** — Ctrl+Z / Ctrl+Y (or the header buttons) step back through every edit
 - **Autosave & session restore** — work is continuously saved in your browser; if the tab closes, Michify offers to restore it on the next visit
 - **Flexible image input** — drag & drop files, click **Add image…** to browse (multiple files fill free pockets automatically), or paste an image straight from the clipboard with Ctrl+V
-- **Expand slots** — grow an image slot one pocket at a time (left, right, up, down) so a single image spans the extra pockets as one unified piece
+- **Expand and trim slots** — grow an image slot one pocket at a time (left, right, up, down) so a single image spans the extra pockets as one unified piece, and trim any side back if you overshoot
 - **Michi Method support** — handle cut and continuous seams (side-loading binders where pockets face each other) and mark pockets as intentionally empty for balanced compositions
 - **Right-click context menu** — quick access to the most common actions (mark/unmark empty, remove image, copy/paste crop, and expand) right where you're working
 - **Absolute mm-based sizing** — same zoom shows the same image size across different slot dimensions
@@ -104,7 +104,7 @@ Not sure what your binder has? Look at a pair of adjacent pockets and check whic
 
 There are two ways to make an image cover more than one pocket, and they produce different results:
 
-**Expand a slot** grows the current slot so one image spans the extra pockets as a single unified piece. Use the **Expand slot** buttons in the right panel (or the right-click menu) to grow left, right, up, or down one pocket at a time. This is the right choice when you want one continuous artwork across several pockets. With continuous seams the image flows across the gap; with cut seams it is split into separate printable pieces but still treated as one design.
+**Expand a slot** grows the current slot so one image spans the extra pockets as a single unified piece. Use the **Expand slot** buttons in the right panel (or the right-click menu) to grow left, right, up, or down one pocket at a time. The **Trim** buttons below them do the opposite: they remove the outermost pocket from the chosen side, so every edge of the slot can be moved outward or inward freely. This is the right choice when you want one continuous artwork across several pockets. With continuous seams the image flows across the gap; with cut seams it is split into separate printable pieces but still treated as one design.
 
 **Copy / paste crop** places the same image into a separate, independent pocket. Use Ctrl+C / Ctrl+V (or the right-click menu) when you want the same picture in another pocket that you can adjust independently.
 

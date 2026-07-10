@@ -130,6 +130,18 @@ function renderCornerOverlays(canvas) {
   }
 }
 
+// The white wedge between the square corner and the quarter-circle arc,
+// drawn as an SVG path in a 1x1 viewBox. SVG is document content like <img>,
+// so unlike CSS backgrounds it always prints, regardless of the browser's
+// "background graphics" setting.
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const CORNER_PATHS = {
+  tl: 'M0,0 L1,0 A1,1 0 0,0 0,1 Z',
+  tr: 'M1,0 L0,0 A1,1 0 0,1 1,1 Z',
+  bl: 'M0,1 L0,0 A1,1 0 0,0 1,1 Z',
+  br: 'M1,1 L1,0 A1,1 0 0,1 0,1 Z'
+};
+
 function addCornerOverlays(container, x, y, w, h, radiusPx) {
   const corners = [
     { cls: 'tl', dx: 0, dy: 0 },
@@ -138,12 +150,18 @@ function addCornerOverlays(container, x, y, w, h, radiusPx) {
     { cls: 'br', dx: w - radiusPx, dy: h - radiusPx }
   ];
   corners.forEach(corner => {
-    const overlay = document.createElement('div');
-    overlay.className = 'corner-overlay ' + corner.cls;
+    const overlay = document.createElementNS(SVG_NS, 'svg');
+    overlay.setAttribute('class', 'corner-overlay');
+    overlay.setAttribute('viewBox', '0 0 1 1');
+    overlay.setAttribute('preserveAspectRatio', 'none');
     overlay.style.left = (x + corner.dx) + 'px';
     overlay.style.top = (y + corner.dy) + 'px';
     overlay.style.width = radiusPx + 'px';
     overlay.style.height = radiusPx + 'px';
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', CORNER_PATHS[corner.cls]);
+    path.setAttribute('fill', '#fff');
+    overlay.appendChild(path);
     container.appendChild(overlay);
   });
 }
@@ -894,6 +912,58 @@ function expandSlot(dir) {
 }
 
 // ============================================================
+// TRIM SLOT (shrink by one pocket from the chosen side)
+// The counterpart of expandSlot: each edge of the slot can be
+// moved outward (expand) or inward (trim), so an accidental
+// expand is reversed by trimming the same side. Offsets shift
+// by exactly one pocket so the visible crop stays in place.
+// ============================================================
+function trimSlot(dir) {
+  if (!state.selectedSlot) return;
+  const { row, col } = state.selectedSlot;
+  const key = row + ',' + col;
+  const p = currentPage();
+  const img = p.images[key];
+  if (!img) {
+    setStatus('Select an image slot to trim');
+    return;
+  }
+  const sw = img.slotW || 1;
+  const sh = img.slotH || 1;
+  if ((dir === 'left' || dir === 'right') && sw <= 1) {
+    setStatus('Slot is already 1 pocket wide');
+    return;
+  }
+  if ((dir === 'up' || dir === 'down') && sh <= 1) {
+    setStatus('Slot is already 1 pocket tall');
+    return;
+  }
+  pushHistory();
+  let newRow = row, newCol = col;
+  if (dir === 'right') {
+    img.slotW = sw - 1;
+  } else if (dir === 'down') {
+    img.slotH = sh - 1;
+  } else if (dir === 'left') {
+    newCol = col + 1;
+    delete p.images[key];
+    img.xMm -= p.pocketW + p.seamH;
+    img.slotW = sw - 1;
+    p.images[newRow + ',' + newCol] = img;
+  } else if (dir === 'up') {
+    newRow = row + 1;
+    delete p.images[key];
+    img.yMm -= p.pocketH + p.seamV;
+    img.slotH = sh - 1;
+    p.images[newRow + ',' + newCol] = img;
+  }
+  clampImage(p, img);
+  state.selectedSlot = { row: newRow, col: newCol };
+  renderBinder();
+  setStatus('Trimmed ' + dir + ' to ' + (img.slotW || 1) + 'x' + (img.slotH || 1));
+}
+
+// ============================================================
 // CONTEXT MENU (right-click on pockets)
 // ============================================================
 function buildContextItems(ctx) {
@@ -941,6 +1011,19 @@ function buildContextItems(ctx) {
     items.push({ label: 'Expand right', action: () => expandSlot('right') });
     items.push({ label: 'Expand up', action: () => expandSlot('up') });
     items.push({ label: 'Expand down', action: () => expandSlot('down') });
+    const sw = slot.image.slotW || 1;
+    const sh = slot.image.slotH || 1;
+    if (sw > 1 || sh > 1) {
+      items.push({ separator: true });
+      if (sw > 1) {
+        items.push({ label: 'Trim left', action: () => trimSlot('left') });
+        items.push({ label: 'Trim right', action: () => trimSlot('right') });
+      }
+      if (sh > 1) {
+        items.push({ label: 'Trim top', action: () => trimSlot('up') });
+        items.push({ label: 'Trim bottom', action: () => trimSlot('down') });
+      }
+    }
   }
 
   return items;
@@ -1915,7 +1998,16 @@ document.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (tag === 'SELECT') {
+    // A select keeps keyboard focus after being used with the mouse (e.g.
+    // the Rotate dropdown), which used to swallow all shortcuts. Let the
+    // keys through that have no function inside a select; arrows and
+    // typeahead stay native so the select still works with the keyboard.
+    const allowed = e.key === 'Delete' || e.key === 'e' || e.key === 'E' || e.ctrlKey || e.metaKey;
+    if (!allowed) return;
+  }
   const key = state.selectedSlot ? state.selectedSlot.row + ',' + state.selectedSlot.col : null;
   const img = key ? currentPage().images[key] : null;
   if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey)) {
@@ -1986,7 +2078,8 @@ document.addEventListener('keydown', (e) => {
 
 document.addEventListener('paste', (e) => {
   const t = e.target;
-  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+  // Pasting has no native function in a SELECT, so only skip real text fields.
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
   const cd = e.clipboardData;
   if (!cd) return;
   const text = cd.getData('text/plain') || '';
@@ -2077,7 +2170,7 @@ Object.assign(window, {
   setAllSeams, updateCorners, updateImageQuality,
   resizeSlot, toggleIntentionalEmpty, updateImageProps,
   zoomImage, autoFitCover, removeImage,
-  copyImageSettings, pasteImageSettings, expandSlot,
+  copyImageSettings, pasteImageSettings, expandSlot, trimSlot,
   addImagesFromInput, undoAction, redoAction
 });
 

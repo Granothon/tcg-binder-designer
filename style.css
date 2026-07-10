@@ -282,37 +282,19 @@ button.accent:disabled {
 
 /* ============================================================
    CORNER OVERLAYS
-   Small white squares placed at piece/pocket corners to
-   visually round off the colored image content.
-   Each overlay is a square of size radiusPx × radiusPx.
-   A radial gradient carves a transparent quarter-circle out
-   of one corner (the one facing the image), while the rest
-   of the overlay stays white.
-   Using `farthest-side` sizes the gradient's 100% stop to
-   exactly the opposite edge (radiusPx away), so the transparent
-   quarter-circle fills the overlay perfectly without overshoot.
+   Small white wedges placed at piece/pocket corners to visually
+   round off the image content. Each overlay is an SVG square of
+   size radiusPx × radiusPx whose path fills the area between the
+   square corner and a quarter-circle arc. SVG paths are document
+   content (like <img>), so they always print — CSS backgrounds
+   would depend on the browser's "background graphics" setting.
+   The path geometry lives in js/main.js (CORNER_PATHS).
    ============================================================ */
 .corner-overlay {
   position: absolute;
   pointer-events: none;
   z-index: 11;
-  background: white;
-}
-.corner-overlay.tl {
-  /* top-left corner: circle at bottom-right of overlay */
-  background: radial-gradient(circle farthest-side at 100% 100%, transparent 0, transparent calc(100% - 0.5px), white 100%);
-}
-.corner-overlay.tr {
-  /* top-right corner: circle at bottom-left of overlay */
-  background: radial-gradient(circle farthest-side at 0% 100%, transparent 0, transparent calc(100% - 0.5px), white 100%);
-}
-.corner-overlay.bl {
-  /* bottom-left corner: circle at top-right of overlay */
-  background: radial-gradient(circle farthest-side at 100% 0%, transparent 0, transparent calc(100% - 0.5px), white 100%);
-}
-.corner-overlay.br {
-  /* bottom-right corner: circle at top-left of overlay */
-  background: radial-gradient(circle farthest-side at 0% 0%, transparent 0, transparent calc(100% - 0.5px), white 100%);
+  display: block;
 }
 
 /* ============================================================
@@ -719,8 +701,8 @@ input[type="file"] { display: none; }
     position: relative;
   }
   .print-page:last-child { page-break-after: auto; }
-  /* Corner overlays are background gradients; ask the browser to print them
-     even when "background graphics" is off. */
+  /* Belt and braces: ask the browser to print colors exactly. Corner
+     overlays are SVG content and print regardless of this. */
   .print-page, .print-page * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

@@ -64,6 +64,16 @@ window.addEventListener('load', async () => {
     log('rotate 90 left compensation 381px', imgEl && Math.abs(parseFloat(imgEl.style.left) - 381) < 1,
         imgEl && ('left=' + imgEl.style.left));
 
+    // Regression: Delete must work while the Rotate dropdown still has focus
+    const rotSel = doc.getElementById('img-rotate');
+    rotSel.focus();
+    rotSel.dispatchEvent(new fr.KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+    await sleep(50);
+    log('Delete works with rotate dropdown focused', !doc.querySelector('img[data-slot-key]'));
+    fr.undoAction(); // restore the rotated image for the next checks
+    await sleep(50);
+    log('undo restores deleted image', !!doc.querySelector('img[data-slot-key="0,0"]'));
+
     // Undo rotate, then undo paste
     fr.undoAction();
     await sleep(50);
@@ -99,6 +109,24 @@ window.addEventListener('load', async () => {
     log('autosave written with image',
         saved !== 'timeout' && !!saved && !!saved.pages && !!saved.pages[0].images['0,0'],
         saved === 'timeout' ? 'indexeddb timeout' : '');
+
+    // Expand + trim round trip
+    doc.querySelector('.pocket[data-row="0"][data-col="0"]').dispatchEvent(new fr.MouseEvent('click', { bubbles: true }));
+    fr.expandSlot('right');
+    await sleep(50);
+    log('expand right spans pocket 0,1', doc.querySelector('.pocket[data-row="0"][data-col="1"]').classList.contains('has-image'));
+    fr.trimSlot('right');
+    await sleep(50);
+    log('trim right restores 1x1', !doc.querySelector('.pocket[data-row="0"][data-col="1"]').classList.contains('has-image'));
+
+    // Rounded corners render as SVG paths (document content prints reliably)
+    doc.getElementById('corner-mode').value = 'every';
+    fr.updateCorners();
+    await sleep(50);
+    const overlays = doc.querySelectorAll('svg.corner-overlay path');
+    log('corner overlays are SVG paths', overlays.length === 4, 'count=' + overlays.length);
+    doc.getElementById('corner-mode').value = 'none';
+    fr.updateCorners();
 
     // Print scale compensation: persists to localStorage and shows in the fit summary
     doc.getElementById('scale-comp-h').value = '99.5';
