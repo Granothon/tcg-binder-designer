@@ -1384,7 +1384,13 @@ function applyProjectData(raw) {
   state.imageMaxDim = norm.imageMaxDim;
   document.getElementById('corner-mode').value = state.cornerMode;
   document.getElementById('corner-radius').value = state.cornerRadius;
-  document.getElementById('image-quality').value = String(state.imageMaxDim);
+  const qualitySel = document.getElementById('image-quality');
+  qualitySel.value = String(state.imageMaxDim);
+  if (qualitySel.value === '') {
+    // Saved value no longer offered (e.g. the removed 2000 px option)
+    state.imageMaxDim = 3000;
+    qualitySel.value = '3000';
+  }
   loadPageToUI();
   updateCorners(); // also renders the binder
   renderPagesList();
