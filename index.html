@@ -194,6 +194,19 @@
         <label>Margin (mm)</label>
         <input type="number" id="paper-margin" value="5" min="0" max="20" step="1" onchange="updatePrintFit()">
       </div>
+      <div class="field">
+        <label>Measured H bar (mm)</label>
+        <input type="number" id="scale-comp-h" value="100" min="90" max="110" step="0.1" onchange="updateScaleCompensation()">
+      </div>
+      <div class="field">
+        <label>Measured V bar (mm)</label>
+        <input type="number" id="scale-comp-v" value="100" min="90" max="110" step="0.1" onchange="updateScaleCompensation()">
+      </div>
+      <div class="info">
+        Scale compensation for precise printing: print the calibration page, measure both 100 mm bars,
+        and enter the measured lengths above. Michify counter-scales the output to cancel your printer's
+        error. Leave at 100 for no compensation. Saved per browser, not per project.
+      </div>
       <div id="print-fit-result"></div>
       <div class="modal-actions">
         <button class="secondary" onclick="printCalibration()" title="Print a 100 mm test ruler to verify your printer is not scaling the page">Calibration page</button>
@@ -212,7 +225,7 @@
         Design custom inserts, plan Michi Method spreads, and export print-ready layouts with millimeter-accurate dimensions.
       </p>
       <p class="modal-para">
-        <b>Version:</b> 4.0<br>
+        <b>Version:</b> 4.1<br>
         <b>License:</b> MIT (free and open source)<br>
         <b>Author:</b> Risto Ruuskanen
       </p>

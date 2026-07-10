@@ -1437,6 +1437,53 @@ function collectPrintPieces() {
 }
 
 // ============================================================
+// PRINT SCALE COMPENSATION
+// Cancels the printer's own scaling error: the user prints the
+// calibration page, measures the two 100 mm bars and enters the
+// measured lengths. The print output is then counter-scaled per
+// axis. Printer-specific, so stored in localStorage rather than
+// in the project file.
+// ============================================================
+const PRINT_SCALE_KEY = 'michify-print-scale';
+
+function loadPrintScaleUI() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(PRINT_SCALE_KEY)); } catch { /* ignore */ }
+  if (saved) {
+    if (isFinite(saved.h)) document.getElementById('scale-comp-h').value = saved.h;
+    if (isFinite(saved.v)) document.getElementById('scale-comp-v').value = saved.v;
+  }
+}
+
+function updateScaleCompensation() {
+  const h = numInput('scale-comp-h', 100);
+  const v = numInput('scale-comp-v', 100);
+  document.getElementById('scale-comp-h').value = h;
+  document.getElementById('scale-comp-v').value = v;
+  try { localStorage.setItem(PRINT_SCALE_KEY, JSON.stringify({ h, v })); } catch { /* ignore */ }
+  updatePrintFit();
+}
+
+function getScaleCompensation() {
+  const h = numInput('scale-comp-h', 100);
+  const v = numInput('scale-comp-v', 100);
+  return { fx: 100 / h, fy: 100 / v, h, v, active: h !== 100 || v !== 100 };
+}
+
+function compPercent(f) {
+  const pct = (f - 1) * 100;
+  return (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+}
+
+function applyScaleCompensation(sheetDiv) {
+  const comp = getScaleCompensation();
+  if (!comp.active) return comp;
+  sheetDiv.style.transform = 'scale(' + comp.fx + ', ' + comp.fy + ')';
+  sheetDiv.style.transformOrigin = 'top left';
+  return comp;
+}
+
+// ============================================================
 // PRINT DIALOG
 // ============================================================
 function openPrintDialog() {
@@ -1472,7 +1519,12 @@ function updatePrintFit() {
   let maxSeam = 0;
   state.pages.forEach(page => { maxSeam = Math.max(maxSeam, page.seamH, page.seamV); });
   const gapMm = maxSeam;
-  const result = packPieces(pieces, paper.usableW, paper.usableH, gapMm);
+  // When compensation enlarges the output, pack into a correspondingly
+  // smaller area so the scaled result still fits inside the margins.
+  const comp = getScaleCompensation();
+  const packW = paper.usableW / Math.max(1, comp.fx);
+  const packH = paper.usableH / Math.max(1, comp.fy);
+  const result = packPieces(pieces, packW, packH, gapMm);
   if (result.tooLarge) {
     const p = result.tooLarge;
     resultEl.className = 'fit-result fit-bad';
@@ -1493,6 +1545,9 @@ function updatePrintFit() {
     msg += '<br><span style="color:#FFB000">' + rotatedCount + ' piece' + (rotatedCount !== 1 ? 's' : '') + ' auto-rotated to fit</span>';
   }
   msg += '<br><span style="font-size:11px;color:#888">Gap between pieces: ' + gapMm + ' mm (matches largest seam for cutting)</span>';
+  if (comp.active) {
+    msg += '<br><span style="font-size:11px;color:#888">Scale compensation: H ' + compPercent(comp.fx) + ', V ' + compPercent(comp.fy) + ' (bars measured ' + comp.h + ' / ' + comp.v + ' mm)</span>';
+  }
   if (state.cornerMode !== 'none') {
     const modeText = state.cornerMode === 'outer' ? 'outer edges' : 'every card';
     msg += '<br><span style="font-size:11px;color:#888">Corners rounded: ' + state.cornerRadius + ' mm on ' + modeText + '</span>';
@@ -1621,6 +1676,7 @@ function preparePrint(packResult, paper) {
     sheetDiv.style.background = 'white';
     sheetDiv.style.position = 'relative';
     sheetDiv.style.margin = '0 auto';
+    applyScaleCompensation(sheetDiv);
     sheet.placements.forEach(placement => {
       renderPrintPiece(sheetDiv, placement, MM_TO_PX);
     });
@@ -1713,6 +1769,7 @@ function printCalibration() {
   sheet.style.margin = '0 auto';
   sheet.style.color = 'black';
   sheet.style.fontFamily = 'sans-serif';
+  const comp = applyScaleCompensation(sheet);
   sheet.appendChild(calibrationBar('h', 10, 10, MM_TO_PX));
   sheet.appendChild(calibrationBar('v', 10, 20, MM_TO_PX));
   const note = document.createElement('div');
@@ -1722,11 +1779,19 @@ function printCalibration() {
   note.style.width = (120 * MM_TO_PX) + 'px';
   note.style.fontSize = '12px';
   note.style.lineHeight = '1.5';
-  note.innerHTML = '<b>Michify print calibration</b><br><br>' +
+  let noteHtml = '<b>Michify print calibration</b><br><br>' +
     'Measure both black bars with a ruler. Each must be exactly <b>100 mm</b> long.<br><br>' +
     'If they are not, your browser or printer is scaling the page: set scale to <b>100%</b> ' +
     'and disable any "fit to page" option in the print dialog, then print this page again.<br><br>' +
-    'Once both bars measure 100 mm, your inserts will print at their exact physical size.';
+    'If the bars are still slightly off at 100% scale, enter their measured lengths in the ' +
+    'print dialog\'s scale compensation fields and reprint this page: the bars should then ' +
+    'measure exactly 100 mm.';
+  if (comp.active) {
+    noteHtml += '<br><br><b>Scale compensation is active</b> (measured H ' + comp.h + ' mm, V ' + comp.v + ' mm; ' +
+      'applied H ' + compPercent(comp.fx) + ', V ' + compPercent(comp.fy) + '). ' +
+      'If both bars now measure 100 mm, the compensation is correct.';
+  }
+  note.innerHTML = noteHtml;
   sheet.appendChild(note);
   canvasArea.appendChild(sheet);
   setTimeout(() => {
@@ -2006,7 +2071,7 @@ document.addEventListener('mouseup', (e) => {
 Object.assign(window, {
   newProject, saveProject, loadProject,
   openAboutDialog, closeAboutDialog,
-  openPrintDialog, closePrintDialog, confirmPrint, printCalibration, updatePrintFit,
+  openPrintDialog, closePrintDialog, confirmPrint, printCalibration, updatePrintFit, updateScaleCompensation,
   addPage, duplicatePage,
   updateBinder, zoomView, resetZoom,
   setAllSeams, updateCorners, updateImageQuality,
@@ -2021,6 +2086,7 @@ Object.assign(window, {
 // ============================================================
 async function init() {
   onDirty(queueAutosave);
+  loadPrintScaleUI();
   // Render the default UI immediately; offer the autosave restore after.
   loadPageToUI();
   renderPagesList();

@@ -99,6 +99,23 @@ window.addEventListener('load', async () => {
     log('autosave written with image',
         saved !== 'timeout' && !!saved && !!saved.pages && !!saved.pages[0].images['0,0'],
         saved === 'timeout' ? 'indexeddb timeout' : '');
+
+    // Print scale compensation: persists to localStorage and shows in the fit summary
+    doc.getElementById('scale-comp-h').value = '99.5';
+    doc.getElementById('scale-comp-v').value = '100.5';
+    fr.updateScaleCompensation();
+    const comp = JSON.parse(fr.localStorage.getItem('michify-print-scale'));
+    log('scale compensation persisted', comp && comp.h === 99.5 && comp.v === 100.5,
+        fr.localStorage.getItem('michify-print-scale'));
+    fr.openPrintDialog();
+    await sleep(200);
+    const fitHtml = doc.getElementById('print-fit-result').innerHTML;
+    log('compensation shown in print fit', fitHtml.indexOf('Scale compensation') >= 0 && fitHtml.indexOf('+0.50%') >= 0,
+        fitHtml.replace(/<[^>]+>/g, ' ').slice(0, 160));
+    fr.closePrintDialog();
+    doc.getElementById('scale-comp-h').value = '100';
+    doc.getElementById('scale-comp-v').value = '100';
+    fr.updateScaleCompensation();
   } catch (e) {
     log('EXCEPTION', false, e.stack || String(e));
   }

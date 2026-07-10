@@ -28,6 +28,7 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 - **Print quality guidance** — the print dialog warns you if any image would look soft at its intended size
 - **Smart bin-packing printing** — automatically arranges pieces on A4/A3 sheets with proper cutting margins
 - **Print calibration page** — a 100 mm test ruler that verifies your printer is not scaling the page before you commit paper and ink
+- **Scale compensation** — for precision printing: enter the measured lengths of the calibration bars and Michify counter-scales the output per axis to cancel your printer's remaining error
 
 ## Getting started
 
@@ -141,6 +142,7 @@ Michify handles the complex parts of printing automatically.
 - **Corner rounding** — enable rounded corners in the sidebar to add professional-looking rounded corners automatically. Works as both visual style and cutting guide.
 - **Physical accuracy** — all measurements are in real millimeters. Print at 100% scale (not "fit to page") for pixel-perfect results.
 - **Calibration** — not sure your printer honors 100% scale? Click **Calibration page** in the print dialog and measure the printed 100 mm ruler before printing your inserts.
+- **Scale compensation** — if the calibration bars are still slightly off at 100% scale (most printers have a small paper-feed error), enter the measured bar lengths in the print dialog. Michify stretches the output by the inverse amount, separately for each axis. Reprint the calibration page to verify: the bars should then measure exactly 100 mm. The setting is remembered per browser, since it belongs to your printer rather than to any project.
 
 The print dialog estimates each image's effective DPI and warns you if any would look soft or pixelated. If you see a low-DPI warning, the fix is a higher-resolution source image, not a Michify setting.
 
