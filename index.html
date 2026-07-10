@@ -33,77 +33,93 @@
   </header>
 
   <div id="sidebar">
-    <h2>Pages</h2>
-    <div id="pages-list" class="pages-list"></div>
-    <button class="secondary full-width" onclick="addPage()">+ Add page</button>
-    <button class="secondary full-width mt-5" onclick="duplicatePage()">Duplicate current</button>
-
-    <h2 class="mt-20">Binder dimensions</h2>
-    <div class="subsection">
-      <div class="field"><label>Rows</label><input type="number" id="rows" min="1" max="5" value="3" onchange="updateBinder()"></div>
-      <div class="field"><label>Columns</label><input type="number" id="cols" min="1" max="5" value="3" onchange="updateBinder()"></div>
-      <div class="field"><label>Pocket W (mm)</label><input type="number" id="pocket-w" min="30" max="150" value="68" step="0.5" onchange="updateBinder()"></div>
-      <div class="field"><label>Pocket H (mm)</label><input type="number" id="pocket-h" min="30" max="200" value="93" step="0.5" onchange="updateBinder()"></div>
-      <div class="field"><label>H-seam (mm)</label><input type="number" id="seam-h" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
-      <div class="field"><label>V-seam (mm)</label><input type="number" id="seam-v" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
+    <h2 class="collapsible" data-section="pages" onclick="toggleSection('pages')"><span class="caret">▾</span>Pages</h2>
+    <div class="section-body">
+      <div id="pages-list" class="pages-list"></div>
+      <button class="secondary full-width" onclick="addPage()">+ Add page</button>
+      <button class="secondary full-width mt-5" onclick="duplicatePage()">Duplicate current</button>
     </div>
 
-    <h2>View</h2>
-    <div class="subsection">
-      <div class="zoom-slider-row">
-        <label class="zoom-label">Zoom</label>
-        <button class="zoom-btn" onclick="zoomView(-10)" title="Zoom out">−</button>
-        <input type="range" id="view-scale" class="zoom-slider" min="30" max="500" value="100" step="10" oninput="updateBinder()">
-        <button class="zoom-btn" onclick="zoomView(10)" title="Zoom in">+</button>
-        <span id="zoom-value" class="zoom-value" onclick="resetZoom()" title="Click to reset zoom (Ctrl+0)">100%</span>
-      </div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-swatch swatch-cut"></div>Cut</div>
-        <div class="legend-item"><div class="legend-swatch swatch-continuous"></div>Continuous</div>
-        <div class="legend-item"><div class="legend-swatch swatch-lost"></div>Lost area</div>
-        <div class="legend-item"><div class="legend-swatch swatch-empty"></div>Intentional empty</div>
+    <h2 class="collapsible mt-20" data-section="dimensions" onclick="toggleSection('dimensions')"><span class="caret">▾</span>Binder dimensions<span class="section-summary" id="dims-summary"></span></h2>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="field"><label>Rows</label><input type="number" id="rows" min="1" max="5" value="3" onchange="updateBinder()"></div>
+        <div class="field"><label>Columns</label><input type="number" id="cols" min="1" max="5" value="3" onchange="updateBinder()"></div>
+        <div class="field"><label>Pocket W (mm)</label><input type="number" id="pocket-w" min="30" max="150" value="68" step="0.5" onchange="updateBinder()"></div>
+        <div class="field"><label>Pocket H (mm)</label><input type="number" id="pocket-h" min="30" max="200" value="93" step="0.5" onchange="updateBinder()"></div>
+        <div class="field"><label>H-seam (mm)</label><input type="number" id="seam-h" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
+        <div class="field"><label>V-seam (mm)</label><input type="number" id="seam-v" min="0" max="20" value="2" step="0.5" onchange="updateBinder()"></div>
       </div>
     </div>
 
-    <h2 class="mt-20">Seams</h2>
-    <div class="subsection">
-      <button class="secondary full-width" onclick="setAllSeams('cut')">All CUT</button>
-      <button class="secondary full-width mt-5" onclick="setAllSeams('continuous')">All CONTINUOUS</button>
-      <div class="info">Click any seam on canvas to toggle between cut and continuous.</div>
-    </div>
-
-    <h2 class="mt-20">Corners</h2>
-    <div class="subsection">
-      <div class="field">
-        <label>Style</label>
-        <select id="corner-mode" onchange="updateCorners()">
-          <option value="none" selected>No rounding</option>
-          <option value="outer">Round outer edges</option>
-          <option value="every">Round every card</option>
-        </select>
-      </div>
-      <div class="field hidden" id="corner-radius-field">
-        <label>Radius (mm)</label>
-        <input type="number" id="corner-radius" value="3.18" min="0.5" max="10" step="0.01" onchange="updateCorners()">
-      </div>
-      <div class="info">
-        Preview shows rounded corners and they carry over to print. No corner cutter tool needed.
+    <h2 class="collapsible" data-section="view" onclick="toggleSection('view')"><span class="caret">▾</span>View</h2>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="zoom-slider-row">
+          <label class="zoom-label">Zoom</label>
+          <button class="zoom-btn" onclick="zoomView(-10)" title="Zoom out">−</button>
+          <input type="range" id="view-scale" class="zoom-slider" min="30" max="500" value="100" step="10" oninput="updateBinder()">
+          <button class="zoom-btn" onclick="zoomView(10)" title="Zoom in">+</button>
+          <span id="zoom-value" class="zoom-value" onclick="resetZoom()" title="Click to reset zoom (Ctrl+0)">100%</span>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-swatch swatch-cut"></div>Cut</div>
+          <div class="legend-item"><div class="legend-swatch swatch-continuous"></div>Continuous</div>
+          <div class="legend-item"><div class="legend-swatch swatch-lost"></div>Lost area</div>
+          <div class="legend-item"><div class="legend-swatch swatch-empty"></div>Intentional empty</div>
+        </div>
       </div>
     </div>
 
-    <h2 class="mt-20">Image quality</h2>
-    <div class="subsection">
-      <div class="field">
-        <label>Downscale on upload</label>
-        <select id="image-quality" onchange="updateImageQuality()">
-          <option value="3000" selected>Balanced (3000 px)</option>
-          <option value="4000">High (4000 px)</option>
-          <option value="0">Original (no downscale)</option>
-        </select>
+    <h2 class="collapsible mt-20" data-section="seams" onclick="toggleSection('seams')"><span class="caret">▾</span>Seams</h2>
+    <div class="section-body">
+      <div class="subsection">
+        <button class="secondary full-width" onclick="setAllSeams('cut')" title="Set every seam on this page to cut">All CUT</button>
+        <button class="secondary full-width mt-5" onclick="setAllSeams('continuous')" title="Set every seam on this page to continuous">All CONTINUOUS</button>
+        <div class="info">Click any seam on canvas to toggle between cut and continuous.</div>
       </div>
-      <div class="info">
-        Large images are downscaled when added, to keep the app and save files fast. Affects only images added afterwards. 3000 px ≈ 300 DPI across a full 3×3 spread; pick High or Original before adding images meant for even larger continuous spreads.
+    </div>
+
+    <h2 class="collapsible mt-20" data-section="corners" onclick="toggleSection('corners')"><span class="caret">▾</span>Corners</h2>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="field">
+          <label>Style</label>
+          <select id="corner-mode" onchange="updateCorners()" title="Rounded corners show in the preview and print output - no corner cutter tool needed">
+            <option value="none" selected>No rounding</option>
+            <option value="outer">Round outer edges</option>
+            <option value="every">Round every card</option>
+          </select>
+        </div>
+        <div class="field hidden" id="corner-radius-field">
+          <label>Radius (mm)</label>
+          <input type="number" id="corner-radius" value="3.18" min="0.5" max="10" step="0.01" onchange="updateCorners()" title="3.18 mm matches the official TCG card corner radius">
+        </div>
+        <div class="info">
+          Preview shows rounded corners and they carry over to print. No corner cutter tool needed.
+        </div>
       </div>
+    </div>
+
+    <h2 class="collapsible mt-20" data-section="quality" onclick="toggleSection('quality')"><span class="caret">▾</span>Image quality</h2>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="field">
+          <label>Downscale on upload</label>
+          <select id="image-quality" onchange="updateImageQuality()" title="Applies only to images added afterwards. Pick High or Original before adding images meant for large continuous spreads.">
+            <option value="3000" selected>Balanced (3000 px)</option>
+            <option value="4000">High (4000 px)</option>
+            <option value="0">Original (no downscale)</option>
+          </select>
+        </div>
+        <div class="info">
+          Large images are downscaled when added, to keep the app and save files fast. Affects only images added afterwards. 3000 px ≈ 300 DPI across a full 3×3 spread; pick High or Original before adding images meant for even larger continuous spreads.
+        </div>
+      </div>
+    </div>
+
+    <div class="hints-row">
+      <label title="Show or hide the gray help texts in all panels"><input type="checkbox" id="hints-toggle" checked onchange="updateHintsVisibility()"> Show hints</label>
     </div>
   </div>
 
@@ -156,10 +172,10 @@
       <h2 class="mt-20">Expand slot</h2>
       <div class="subsection">
         <div class="duplicate-grid">
-          <button class="secondary" onclick="expandSlot('left')">← Left</button>
-          <button class="secondary" onclick="expandSlot('right')">Right →</button>
-          <button class="secondary" onclick="expandSlot('up')">↑ Up</button>
-          <button class="secondary" onclick="expandSlot('down')">↓ Down</button>
+          <button class="secondary" onclick="expandSlot('left')" title="Grow this slot one pocket to the left; the image spans the new area as one piece">← Left</button>
+          <button class="secondary" onclick="expandSlot('right')" title="Grow this slot one pocket to the right; the image spans the new area as one piece">Right →</button>
+          <button class="secondary" onclick="expandSlot('up')" title="Grow this slot one pocket upward; the image spans the new area as one piece">↑ Up</button>
+          <button class="secondary" onclick="expandSlot('down')" title="Grow this slot one pocket downward; the image spans the new area as one piece">↓ Down</button>
         </div>
         <div class="duplicate-grid mt-5">
           <button class="secondary" onclick="trimSlot('left')" title="Remove the leftmost pocket column from this slot">Trim left</button>
@@ -201,11 +217,11 @@
       </div>
       <div class="field">
         <label>Measured H bar (mm)</label>
-        <input type="number" id="scale-comp-h" value="100" min="90" max="110" step="0.1" onchange="updateScaleCompensation()">
+        <input type="number" id="scale-comp-h" value="100" min="90" max="110" step="0.1" onchange="updateScaleCompensation()" title="Measured length of the horizontal calibration bar. Output is counter-scaled to cancel the error; 100 = no compensation.">
       </div>
       <div class="field">
         <label>Measured V bar (mm)</label>
-        <input type="number" id="scale-comp-v" value="100" min="90" max="110" step="0.1" onchange="updateScaleCompensation()">
+        <input type="number" id="scale-comp-v" value="100" min="90" max="110" step="0.1" onchange="updateScaleCompensation()" title="Measured length of the vertical calibration bar. Output is counter-scaled to cancel the error; 100 = no compensation.">
       </div>
       <div class="info">
         Scale compensation for precise printing: print the calibration page, measure both 100 mm bars,
@@ -230,7 +246,7 @@
         Design custom inserts, plan Michi Method spreads, and export print-ready layouts with millimeter-accurate dimensions.
       </p>
       <p class="modal-para">
-        <b>Version:</b> 4.2<br>
+        <b>Version:</b> 4.3<br>
         <b>License:</b> MIT (free and open source)<br>
         <b>Author:</b> Risto Ruuskanen
       </p>

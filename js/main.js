@@ -197,6 +197,7 @@ function updateBinder() {
   renderBinder();
   renderPagesList();
   updatePhysicalInfo();
+  updateDimensionsSummary();
   updateClipboardIndicator();
 }
 
@@ -209,6 +210,57 @@ function updateClipboardIndicator() {
   }
   const pasteBtn = document.getElementById('paste-btn');
   if (pasteBtn) pasteBtn.disabled = !state.clipboard;
+}
+
+// ============================================================
+// UI CHROME: HINTS TOGGLE + COLLAPSIBLE SIDEBAR SECTIONS
+// Both are per-browser presentation preferences, stored in
+// localStorage rather than in the project.
+// ============================================================
+const HINTS_KEY = 'michify-hints';
+const SECTIONS_KEY = 'michify-sections';
+const DEFAULT_COLLAPSED = { quality: true };
+
+function updateHintsVisibility() {
+  const on = document.getElementById('hints-toggle').checked;
+  document.body.classList.toggle('hints-hidden', !on);
+  try { localStorage.setItem(HINTS_KEY, on ? '1' : '0'); } catch { /* ignore */ }
+}
+
+function loadHintsUI() {
+  let on = true;
+  try { on = localStorage.getItem(HINTS_KEY) !== '0'; } catch { /* ignore */ }
+  document.getElementById('hints-toggle').checked = on;
+  document.body.classList.toggle('hints-hidden', !on);
+}
+
+function getCollapsedSections() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SECTIONS_KEY));
+    if (s && typeof s === 'object') return s;
+  } catch { /* ignore */ }
+  return Object.assign({}, DEFAULT_COLLAPSED);
+}
+
+function applySectionStates() {
+  const collapsed = getCollapsedSections();
+  document.querySelectorAll('h2.collapsible').forEach(h2 => {
+    h2.classList.toggle('collapsed', !!collapsed[h2.dataset.section]);
+  });
+}
+
+function toggleSection(id) {
+  const collapsed = getCollapsedSections();
+  collapsed[id] = !collapsed[id];
+  try { localStorage.setItem(SECTIONS_KEY, JSON.stringify(collapsed)); } catch { /* ignore */ }
+  applySectionStates();
+}
+
+// Shown in the Binder dimensions header while the section is collapsed.
+function updateDimensionsSummary() {
+  const p = currentPage();
+  const el = document.getElementById('dims-summary');
+  if (el) el.textContent = p.rows + '×' + p.cols + ' · ' + p.pocketW + '×' + p.pocketH + ' mm';
 }
 
 // ============================================================
@@ -1334,6 +1386,7 @@ function loadPageToUI() {
   document.getElementById('pocket-h').value = p.pocketH;
   document.getElementById('seam-h').value = p.seamH;
   document.getElementById('seam-v').value = p.seamV;
+  updateDimensionsSummary();
 }
 
 // ============================================================
@@ -1682,7 +1735,7 @@ function calculateDpiWarnings() {
   });
   if (items.length === 0) return { summary: null, level: 'ok' };
   const minDpi = Math.min(...items.map(i => i.dpi));
-  const worst = items.find(i => i.dpi === minDpi);
+  const low = items.filter(i => i.dpi < 250).sort((a, b) => a.dpi - b.dpi);
   let level = 'ok';
   let color = '#47E6C1';
   let icon = '✓';
@@ -1699,11 +1752,25 @@ function calculateDpiWarnings() {
     label = 'Acceptable print quality';
   }
   let summary = '<b style="color:' + color + '">' + icon + ' ' + label + '</b>';
-  summary += '<br><span style="font-size:11px;color:#888">Lowest effective resolution: ' + minDpi + ' DPI (' + worst.label + ')';
-  if (level === 'warn') {
-    summary += '<br>Print will look decent but not razor-sharp. Consider a higher-resolution source image.';
-  } else if (level === 'bad') {
-    summary += '<br>Image will look soft or pixelated. Find a higher-resolution version of this image.';
+  summary += '<span style="font-size:11px;color:#888">';
+  if (low.length === 0) {
+    summary += '<br>Lowest effective resolution: ' + minDpi + ' DPI';
+  } else {
+    // List every low image at once so the user does not have to fix them
+    // one by one to discover the next.
+    const MAX_LISTED = 6;
+    summary += '<br>' + low.length + ' image' + (low.length !== 1 ? 's' : '') + ' below 250 DPI:';
+    low.slice(0, MAX_LISTED).forEach(i => {
+      summary += '<br>&nbsp;&nbsp;' + i.label + ' — ' + i.dpi + ' DPI';
+    });
+    if (low.length > MAX_LISTED) {
+      summary += '<br>&nbsp;&nbsp;…and ' + (low.length - MAX_LISTED) + ' more';
+    }
+    if (level === 'bad') {
+      summary += '<br>Images under 150 DPI will look soft or pixelated. Use higher-resolution source images.';
+    } else {
+      summary += '<br>Print will look decent but not razor-sharp. Consider higher-resolution source images.';
+    }
   }
   summary += '</span>';
   return { summary, level };
@@ -2177,7 +2244,8 @@ Object.assign(window, {
   resizeSlot, toggleIntentionalEmpty, updateImageProps,
   zoomImage, autoFitCover, removeImage,
   copyImageSettings, pasteImageSettings, expandSlot, trimSlot,
-  addImagesFromInput, undoAction, redoAction
+  addImagesFromInput, undoAction, redoAction,
+  toggleSection, updateHintsVisibility
 });
 
 // ============================================================
@@ -2186,6 +2254,8 @@ Object.assign(window, {
 async function init() {
   onDirty(queueAutosave);
   loadPrintScaleUI();
+  loadHintsUI();
+  applySectionStates();
   // Render the default UI immediately; offer the autosave restore after.
   loadPageToUI();
   renderPagesList();

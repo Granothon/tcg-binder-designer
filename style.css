@@ -494,6 +494,45 @@ input[type="file"] { display: none; }
   margin-top: 5px;
   line-height: 1.4;
 }
+body.hints-hidden .info { display: none; }
+.hints-row {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #333;
+  font-size: 11px;
+  color: #888;
+}
+.hints-row label { cursor: pointer; user-select: none; }
+.hints-row input { vertical-align: middle; margin-right: 4px; }
+
+/* ============================================================
+   COLLAPSIBLE SIDEBAR SECTIONS
+   ============================================================ */
+h2.collapsible {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+h2.collapsible:hover { color: #ccc; }
+h2.collapsible .caret {
+  font-size: 9px;
+  color: #777;
+  transition: transform 0.15s;
+}
+h2.collapsible.collapsed .caret { transform: rotate(-90deg); }
+.section-summary {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: normal;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #777;
+  display: none;
+}
+h2.collapsible.collapsed .section-summary { display: inline; }
+h2.collapsible.collapsed + .section-body { display: none; }
 .legend {
   display: flex;
   gap: 10px;

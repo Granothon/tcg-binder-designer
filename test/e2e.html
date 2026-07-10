@@ -30,6 +30,32 @@ window.addEventListener('load', async () => {
     log('renders 9 pockets', doc.querySelectorAll('.pocket').length === 9);
     log('add-image input exists', !!doc.getElementById('add-image-file'));
 
+    // Hints toggle hides all info texts and persists
+    const hintsCb = doc.getElementById('hints-toggle');
+    log('hints on by default', hintsCb.checked && !doc.body.classList.contains('hints-hidden'));
+    hintsCb.checked = false;
+    fr.updateHintsVisibility();
+    const infoEl = doc.querySelector('#sidebar .info');
+    log('hints hidden after toggle',
+        doc.body.classList.contains('hints-hidden') &&
+        fr.getComputedStyle(infoEl).display === 'none' &&
+        fr.localStorage.getItem('michify-hints') === '0');
+    hintsCb.checked = true;
+    fr.updateHintsVisibility();
+
+    // Collapsible sidebar sections
+    const qualityH2 = doc.querySelector('h2[data-section="quality"]');
+    log('image quality collapsed by default', qualityH2.classList.contains('collapsed'));
+    fr.toggleSection('dimensions');
+    const dimsH2 = doc.querySelector('h2[data-section="dimensions"]');
+    log('dimensions collapse with summary',
+        dimsH2.classList.contains('collapsed') &&
+        fr.getComputedStyle(dimsH2.nextElementSibling).display === 'none' &&
+        doc.getElementById('dims-summary').textContent.indexOf('68×93') >= 0,
+        'summary=' + doc.getElementById('dims-summary').textContent);
+    fr.toggleSection('dimensions');
+    log('dimensions expand again', !dimsH2.classList.contains('collapsed'));
+
     // Change rows to 4, then undo
     doc.getElementById('rows').value = 4;
     fr.updateBinder();
@@ -140,6 +166,9 @@ window.addEventListener('load', async () => {
     const fitHtml = doc.getElementById('print-fit-result').innerHTML;
     log('compensation shown in print fit', fitHtml.indexOf('Scale compensation') >= 0 && fitHtml.indexOf('+0.50%') >= 0,
         fitHtml.replace(/<[^>]+>/g, ' ').slice(0, 160));
+    // The 400px test image in a 68mm pocket is ~55 DPI; it must be listed by name
+    log('low DPI images listed with location', fitHtml.indexOf('below 250 DPI') >= 0 && fitHtml.indexOf('R1C1') >= 0,
+        fitHtml.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').slice(-160));
     fr.closePrintDialog();
     doc.getElementById('scale-comp-h').value = '100';
     doc.getElementById('scale-comp-v').value = '100';

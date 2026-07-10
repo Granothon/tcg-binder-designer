@@ -25,7 +25,8 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 - **Copy and clone** — copy image crops between slots, move or swap images between slots
 - **Multi-page projects** — design a whole binder in one session, save as JSON for later editing
 - **Rounded corners** — optional preview and print output with rounded corners; default radius matches the official TCG card standard
-- **Print quality guidance** — the print dialog warns you if any image would look soft at its intended size
+- **Print quality guidance** — the print dialog lists every image that would look soft at its intended size, with its page and pocket location
+- **Clean, collapsible UI** — sidebar sections fold away and the built-in hint texts can be hidden once you know the tool
 - **Smart bin-packing printing** — automatically arranges pieces on A4/A3 sheets with proper cutting margins
 - **Print calibration page** — a 100 mm test ruler that verifies your printer is not scaling the page before you commit paper and ink
 - **Scale compensation** — for precision printing: enter the measured lengths of the calibration bars and Michify counter-scales the output per axis to cancel your printer's remaining error
