@@ -264,6 +264,78 @@ function updateDimensionsSummary() {
 }
 
 // ============================================================
+// BINDER PRESETS
+// Common layouts as starting points. Pocket dimensions assume
+// standard 63×88 mm cards with a snug ~68×93 mm pocket; seams
+// vary by brand, so these are labelled as approximate and the
+// user is told to fine-tune. A preset may set a uniform seam
+// type (e.g. side-loading binders use continuous seams).
+// ============================================================
+// Every preset states its seam type so applying one is a full starting
+// layout, and so the selector can tell otherwise-identical layouts apart
+// (standard 9-pocket has cut seams; side-loading has continuous seams).
+const BINDER_PRESETS = [
+  { id: 'std9', name: 'Standard 9-pocket (3×3)', rows: 3, cols: 3, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
+  { id: 'p12', name: '12-pocket (4×3)', rows: 4, cols: 3, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
+  { id: 'p16', name: '16-pocket (4×4)', rows: 4, cols: 4, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
+  { id: 'p4', name: '4-pocket (2×2)', rows: 2, cols: 2, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
+  { id: 'side9', name: 'Side-loading 9-pocket (continuous)', rows: 3, cols: 3, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'continuous' },
+  { id: 'small9', name: 'Small / Japanese 9-pocket (3×3)', rows: 3, cols: 3, pocketW: 61, pocketH: 87, seamH: 2, seamV: 2, seams: 'cut' }
+];
+
+function populateBinderPresets() {
+  const sel = document.getElementById('binder-preset');
+  if (!sel) return;
+  BINDER_PRESETS.forEach(pre => {
+    const opt = document.createElement('option');
+    opt.value = pre.id;
+    opt.textContent = pre.name;
+    sel.appendChild(opt);
+  });
+}
+
+// Show which preset the current page matches, or "Custom" if none.
+function syncBinderPresetSelector() {
+  const sel = document.getElementById('binder-preset');
+  if (!sel) return;
+  const p = currentPage();
+  const match = BINDER_PRESETS.find(pre =>
+    pre.rows === p.rows && pre.cols === p.cols &&
+    pre.pocketW === p.pocketW && pre.pocketH === p.pocketH &&
+    pre.seamH === p.seamH && pre.seamV === p.seamV &&
+    p.seamsH.every(s => s === pre.seams) && p.seamsV.every(s => s === pre.seams)
+  );
+  sel.value = match ? match.id : 'custom';
+}
+
+function applyBinderPreset() {
+  const sel = document.getElementById('binder-preset');
+  const pre = BINDER_PRESETS.find(x => x.id === sel.value);
+  if (!pre) return; // "Custom" selected: leave dimensions as they are
+  pushHistory();
+  const p = currentPage();
+  p.rows = pre.rows;
+  p.cols = pre.cols;
+  p.pocketW = pre.pocketW;
+  p.pocketH = pre.pocketH;
+  p.seamH = pre.seamH;
+  p.seamV = pre.seamV;
+  while (p.seamsH.length < p.cols - 1) p.seamsH.push('cut');
+  while (p.seamsH.length > p.cols - 1) p.seamsH.pop();
+  while (p.seamsV.length < p.rows - 1) p.seamsV.push('cut');
+  while (p.seamsV.length > p.rows - 1) p.seamsV.pop();
+  if (pre.seams) {
+    p.seamsH = p.seamsH.map(() => pre.seams);
+    p.seamsV = p.seamsV.map(() => pre.seams);
+  }
+  loadPageToUI();
+  renderBinder();
+  renderPagesList();
+  updatePhysicalInfo();
+  setStatus('Applied preset: ' + pre.name);
+}
+
+// ============================================================
 // VIEW ZOOM (Office-style slider)
 // ============================================================
 function zoomView(deltaPercent) {
@@ -283,6 +355,28 @@ function resetZoom() {
   input.value = 100;
   updateBinder();
   setStatus('Zoom: 100% (reset)');
+}
+
+// Set the view zoom so the whole page fits the canvas viewport.
+function zoomToFit() {
+  const p = currentPage();
+  const area = document.getElementById('canvas-area');
+  const pad = 32; // breathing room + canvas-area padding
+  const availW = area.clientWidth - pad;
+  const availH = area.clientHeight - pad;
+  const pageW = p.cols * p.pocketW + (p.cols - 1) * p.seamH;
+  const pageH = p.rows * p.pocketH + (p.rows - 1) * p.seamV;
+  if (availW <= 0 || availH <= 0 || pageW <= 0 || pageH <= 0) return;
+  // viewScale (px/mm) = percent/100*3, so percent = fitScale/3*100
+  const fitScale = Math.min(availW / pageW, availH / pageH);
+  const input = document.getElementById('view-scale');
+  const minVal = parseInt(input.min) || 30;
+  const maxVal = parseInt(input.max) || 500;
+  let percent = Math.round(fitScale / 3 * 100 / 10) * 10;
+  percent = Math.max(minVal, Math.min(maxVal, percent));
+  input.value = percent;
+  updateBinder();
+  setStatus('Zoom: ' + percent + '% (fit to window)');
 }
 
 // ============================================================
@@ -641,6 +735,7 @@ function toggleSeam(dir, idx) {
   arr[idx] = arr[idx] === 'cut' ? 'continuous' : 'cut';
   renderBinder();
   updatePhysicalInfo();
+  syncBinderPresetSelector();
 }
 
 function setAllSeams(type) {
@@ -650,6 +745,7 @@ function setAllSeams(type) {
   p.seamsV = p.seamsV.map(() => type);
   renderBinder();
   updatePhysicalInfo();
+  syncBinderPresetSelector();
 }
 
 // ============================================================
@@ -1312,23 +1408,86 @@ function autoFitImage(row, col) {
 // ============================================================
 // PAGES MANAGEMENT
 // ============================================================
+// Small schematic preview of a page: one cell per pocket, colored by
+// state (image / intentional empty / empty). Cheap to build and gives a
+// visual sense of each page's layout for navigation.
+function buildPageThumbnail(page) {
+  const thumb = document.createElement('div');
+  thumb.className = 'page-thumb';
+  const maxSide = 34;
+  const pageW = page.cols * page.pocketW + (page.cols - 1) * page.seamH;
+  const pageH = page.rows * page.pocketH + (page.rows - 1) * page.seamV;
+  const scale = maxSide / Math.max(pageW, pageH);
+  thumb.style.width = (pageW * scale) + 'px';
+  thumb.style.height = (pageH * scale) + 'px';
+  thumb.style.gridTemplateColumns = 'repeat(' + page.cols + ', 1fr)';
+  thumb.style.gridTemplateRows = 'repeat(' + page.rows + ', 1fr)';
+  for (let r = 0; r < page.rows; r++) {
+    for (let c = 0; c < page.cols; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'thumb-cell';
+      if (findSlotAt(page, r, c)) cell.classList.add('has-image');
+      else if (page.emptyPockets && page.emptyPockets.includes(r + ',' + c)) cell.classList.add('empty-mark');
+      thumb.appendChild(cell);
+    }
+  }
+  return thumb;
+}
+
 function renderPagesList() {
   const list = document.getElementById('pages-list');
   list.innerHTML = '';
   state.pages.forEach((page, i) => {
     const item = document.createElement('div');
     item.className = 'page-item' + (i === state.currentPage ? ' active' : '');
+
+    item.appendChild(buildPageThumbnail(page));
+
     const label = document.createElement('span');
+    label.className = 'page-label';
     label.textContent = 'Page ' + (i + 1) + ' (' + page.rows + 'x' + page.cols + ')';
     item.appendChild(label);
+
+    const controls = document.createElement('div');
+    controls.className = 'page-controls';
+    const up = document.createElement('button');
+    up.className = 'page-move';
+    up.textContent = '▲';
+    up.title = 'Move page up';
+    up.disabled = i === 0;
+    up.addEventListener('click', (e) => { e.stopPropagation(); movePage(i, -1); });
+    const down = document.createElement('button');
+    down.className = 'page-move';
+    down.textContent = '▼';
+    down.title = 'Move page down';
+    down.disabled = i === state.pages.length - 1;
+    down.addEventListener('click', (e) => { e.stopPropagation(); movePage(i, 1); });
     const del = document.createElement('button');
     del.className = 'del';
     del.textContent = '×';
+    del.title = 'Delete page';
     del.addEventListener('click', (e) => { e.stopPropagation(); deletePage(i); });
-    item.appendChild(del);
+    controls.appendChild(up);
+    controls.appendChild(down);
+    controls.appendChild(del);
+    item.appendChild(controls);
+
     item.addEventListener('click', () => switchPage(i));
     list.appendChild(item);
   });
+}
+
+// Move a page one step up (-1) or down (+1), keeping it the current page.
+function movePage(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= state.pages.length) return;
+  pushHistory();
+  const [pg] = state.pages.splice(i, 1);
+  state.pages.splice(j, 0, pg);
+  if (state.currentPage === i) state.currentPage = j;
+  else if (state.currentPage === j) state.currentPage = i;
+  renderPagesList();
+  setStatus('Moved page ' + (i + 1) + ' to position ' + (j + 1));
 }
 
 function addPage() {
@@ -1387,6 +1546,7 @@ function loadPageToUI() {
   document.getElementById('seam-h').value = p.seamH;
   document.getElementById('seam-v').value = p.seamV;
   updateDimensionsSummary();
+  syncBinderPresetSelector();
 }
 
 // ============================================================
@@ -2005,6 +2165,132 @@ function calibrationBar(dir, xMm, yMm, MM_TO_PX) {
 }
 
 // ============================================================
+// PNG EXPORT
+// Renders the current page to a canvas and downloads it, so a
+// design can be shared as an image. The background is transparent
+// and cut seams stay empty, giving the same assembled look as the
+// print output (continuous seams flow, cut seams are gaps).
+// ============================================================
+const EXPORT_PX_PER_MM = 8; // ~203 DPI, good for sharing without huge files
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function drawSlotImageClipped(ctx, imgEl, img, page, scale, clip) {
+  const [srow, scol] = [img._row, img._col];
+  const originX = (scol * (page.pocketW + page.seamH)) * scale;
+  const originY = (srow * (page.pocketH + page.seamV)) * scale;
+  const pl = imageElementPlacement(img, 0, 0);
+  const ratio = img._naturalRatio || (imgEl.naturalWidth / imgEl.naturalHeight) || 1;
+  const wPx = pl.elWidthMm * scale;
+  const hPx = wPx / ratio;
+  ctx.save();
+  clip();
+  ctx.translate(originX + pl.leftMm * scale, originY + pl.topMm * scale);
+  ctx.rotate(pl.rotate * Math.PI / 180);
+  ctx.drawImage(imgEl, 0, 0, wPx, hPx);
+  ctx.restore();
+}
+
+function renderPageToCanvas(page, imgEls) {
+  const scale = EXPORT_PX_PER_MM;
+  const pageW = page.cols * page.pocketW + (page.cols - 1) * page.seamH;
+  const pageH = page.rows * page.pocketH + (page.rows - 1) * page.seamV;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(pageW * scale);
+  canvas.height = Math.round(pageH * scale);
+  const ctx = canvas.getContext('2d');
+  const radiusPx = state.cornerRadius * scale;
+  const pocketRectPx = (r, c) => ({
+    x: c * (page.pocketW + page.seamH) * scale,
+    y: r * (page.pocketH + page.seamV) * scale,
+    w: page.pocketW * scale,
+    h: page.pocketH * scale
+  });
+  for (const key in page.images) {
+    const img = page.images[key];
+    const el = imgEls[key];
+    if (!el) continue;
+    const [srow, scol] = key.split(',').map(Number);
+    img._row = srow; img._col = scol;
+    if (state.cornerMode === 'every') {
+      // One rounded clip per pocket of the slot
+      const sw = img.slotW || 1;
+      const sh = img.slotH || 1;
+      for (let r = srow; r < srow + sh; r++) {
+        for (let c = scol; c < scol + sw; c++) {
+          const rect = pocketRectPx(r, c);
+          drawSlotImageClipped(ctx, el, img, page, scale, () => {
+            if (state.cornerRadius > 0) roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, radiusPx);
+            else ctx.rect(rect.x, rect.y, rect.w, rect.h);
+            ctx.clip();
+          });
+        }
+      }
+    } else {
+      // One clip per printable piece (respects cut seams)
+      groupSlotPieces(page, key, img).forEach(piece => {
+        const a = pocketRectPx(piece.firstRow, piece.firstCol);
+        const b = pocketRectPx(piece.lastRow, piece.lastCol);
+        const rect = { x: a.x, y: a.y, w: (b.x + b.w) - a.x, h: (b.y + b.h) - a.y };
+        drawSlotImageClipped(ctx, el, img, page, scale, () => {
+          if (state.cornerMode === 'outer' && state.cornerRadius > 0) {
+            roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, radiusPx);
+          } else {
+            ctx.rect(rect.x, rect.y, rect.w, rect.h);
+          }
+          ctx.clip();
+        });
+      });
+    }
+  }
+  return canvas;
+}
+
+function loadImageEls(page) {
+  const entries = Object.entries(page.images);
+  return Promise.all(entries.map(([key, img]) => new Promise((resolve) => {
+    const el = new Image();
+    el.onload = () => resolve([key, el]);
+    el.onerror = () => resolve([key, null]);
+    el.src = img.src;
+  }))).then(pairs => Object.fromEntries(pairs));
+}
+
+async function exportPagePng() {
+  const page = currentPage();
+  if (Object.keys(page.images).length === 0) {
+    setStatus('Add an image before exporting this page');
+    return;
+  }
+  setStatus('Rendering PNG…');
+  try {
+    const imgEls = await loadImageEls(page);
+    const canvas = renderPageToCanvas(page, imgEls);
+    canvas.toBlob((blob) => {
+      if (!blob) { setStatus('PNG export failed'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'michify_page_' + (state.currentPage + 1) + '_' + new Date().toISOString().slice(0, 10) + '.png';
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus('Page ' + (state.currentPage + 1) + ' exported as PNG');
+    }, 'image/png');
+  } catch (err) {
+    setStatus('PNG export failed: ' + err.message);
+  }
+}
+
+// ============================================================
 // ABOUT DIALOG
 // ============================================================
 function openAboutDialog() {
@@ -2232,6 +2518,177 @@ document.addEventListener('mouseup', (e) => {
 });
 
 // ============================================================
+// TOUCH SUPPORT
+// Unifies tablet interaction with the mouse handlers above:
+//   one finger  -> tap to select, drag to pan the image or
+//                  rubber-band a pocket area, long-press for menu
+//   two fingers -> pinch to zoom (the image if the gesture is
+//                  over the selected slot, otherwise the view)
+// touchstart is preventDefaulted so the browser does not also
+// fire synthetic mouse events we would double-handle.
+// ============================================================
+const TOUCH_MOVE_THRESHOLD = 8; // px before a tap becomes a drag
+const LONG_PRESS_MS = 500;
+let touch = null;      // single-finger gesture state
+let pinch = null;      // two-finger gesture state
+let longPressTimer = null;
+
+function pocketAtPoint(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return el ? el.closest('.pocket') : null;
+}
+
+function touchDist(t0, t1) {
+  return Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+}
+
+function clearLongPress() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}
+
+function endSingleTouch() {
+  clearLongPress();
+  if (touch && touch.mode === 'range' && rangeSelecting) {
+    const startR = Math.min(rangeSelecting.startRow, rangeSelecting.currentRow);
+    const startC = Math.min(rangeSelecting.startCol, rangeSelecting.currentCol);
+    const endR = Math.max(rangeSelecting.startRow, rangeSelecting.currentRow);
+    const endC = Math.max(rangeSelecting.startCol, rangeSelecting.currentCol);
+    if (startR !== endR || startC !== endC) setRangeSelection(startR, startC, endR, endC);
+    rangeSelecting = null;
+  }
+  touch = null;
+}
+
+function startPinch(touches) {
+  clearLongPress();
+  touch = null; // cancel any single-finger gesture
+  rangeSelecting = null;
+  const midX = (touches[0].clientX + touches[1].clientX) / 2;
+  const midY = (touches[0].clientY + touches[1].clientY) / 2;
+  let target = 'view';
+  if (state.selectedSlot) {
+    const pk = pocketAtPoint(midX, midY);
+    if (pk) {
+      const slot = findSlotAt(currentPage(), parseInt(pk.dataset.row), parseInt(pk.dataset.col));
+      if (slot && slot.row === state.selectedSlot.row && slot.col === state.selectedSlot.col) target = 'image';
+    }
+  }
+  pinch = { lastDist: touchDist(touches[0], touches[1]), target };
+}
+
+const canvasArea = document.getElementById('canvas-area');
+
+canvasArea.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    startPinch(e.touches);
+    return;
+  }
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const pk = pocketAtPoint(t.clientX, t.clientY);
+  if (!pk) return;
+  e.preventDefault();
+  const r = parseInt(pk.dataset.row);
+  const c = parseInt(pk.dataset.col);
+  const slot = findSlotAt(currentPage(), r, c);
+  touch = { startX: t.clientX, startY: t.clientY, row: r, col: c, moved: false };
+  if (slot) {
+    // Select and arm a pan of this slot's image
+    selectAt(slot.row, slot.col);
+    const img = currentPage().images[slot.key];
+    touch.mode = 'pan-armed';
+    touch.key = slot.key;
+    touch.imgX = img.xMm;
+    touch.imgY = img.yMm;
+    touch.pushed = false;
+  } else {
+    touch.mode = 'empty-armed';
+  }
+  // Long-press opens the context menu at the touch point
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null;
+    if (!touch || touch.moved) return;
+    const s = findSlotAt(currentPage(), r, c);
+    if (s) selectAt(s.row, s.col); else selectAt(r, c);
+    showContextMenu({ clientX: t.clientX, clientY: t.clientY, preventDefault() {} }, { row: r, col: c });
+    touch = null;
+  }, LONG_PRESS_MS);
+}, { passive: false });
+
+canvasArea.addEventListener('touchmove', (e) => {
+  if (pinch && e.touches.length === 2) {
+    e.preventDefault();
+    const dist = touchDist(e.touches[0], e.touches[1]);
+    if (pinch.lastDist > 0) {
+      const ratio = dist / pinch.lastDist;
+      if (pinch.target === 'image' && state.selectedSlot) {
+        const key = state.selectedSlot.row + ',' + state.selectedSlot.col;
+        const img = currentPage().images[key];
+        if (img) zoomImage(img.widthMm * (ratio - 1));
+      } else {
+        const input = document.getElementById('view-scale');
+        const cur = parseInt(input.value) || 100;
+        zoomView(Math.round(cur * (ratio - 1)));
+      }
+    }
+    pinch.lastDist = dist;
+    return;
+  }
+  if (!touch || e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const dx = t.clientX - touch.startX;
+  const dy = t.clientY - touch.startY;
+  if (!touch.moved && Math.hypot(dx, dy) < TOUCH_MOVE_THRESHOLD) return;
+  touch.moved = true;
+  clearLongPress();
+  e.preventDefault();
+  if (touch.mode === 'pan-armed' || touch.mode === 'pan') {
+    touch.mode = 'pan';
+    const img = currentPage().images[touch.key];
+    if (!img) return;
+    if (!touch.pushed) { pushHistory(); touch.pushed = true; }
+    img.xMm = touch.imgX + dx / state.viewScale;
+    img.yMm = touch.imgY + dy / state.viewScale;
+    clampImage(currentPage(), img);
+    refreshSlotImages(touch.key);
+    updateProperties();
+  } else if (touch.mode === 'empty-armed' || touch.mode === 'range') {
+    touch.mode = 'range';
+    if (!rangeSelecting) rangeSelecting = { startRow: touch.row, startCol: touch.col, currentRow: touch.row, currentCol: touch.col };
+    const pk = pocketAtPoint(t.clientX, t.clientY);
+    if (pk) {
+      rangeSelecting.currentRow = parseInt(pk.dataset.row);
+      rangeSelecting.currentCol = parseInt(pk.dataset.col);
+      updateRangeSelectionPreview();
+    }
+  }
+}, { passive: false });
+
+canvasArea.addEventListener('touchend', (e) => {
+  if (pinch) {
+    if (e.touches.length < 2) pinch = null;
+    return;
+  }
+  if (!touch) return;
+  if (!touch.moved) {
+    // A tap: selection already happened for slots; select empties now
+    clearLongPress();
+    if (touch.mode === 'empty-armed') selectAt(touch.row, touch.col);
+    touch = null;
+    return;
+  }
+  endSingleTouch();
+}, { passive: false });
+
+canvasArea.addEventListener('touchcancel', () => {
+  clearLongPress();
+  touch = null;
+  pinch = null;
+  rangeSelecting = null;
+});
+
+// ============================================================
 // GLOBALS FOR INLINE HTML HANDLERS
 // ============================================================
 Object.assign(window, {
@@ -2245,14 +2702,19 @@ Object.assign(window, {
   zoomImage, autoFitCover, removeImage,
   copyImageSettings, pasteImageSettings, expandSlot, trimSlot,
   addImagesFromInput, undoAction, redoAction,
-  toggleSection, updateHintsVisibility
+  toggleSection, updateHintsVisibility,
+  applyBinderPreset, zoomToFit, exportPagePng
 });
+
+// Internal hooks for the e2e harness only.
+window.__test = { renderPageToCanvas, loadImageEls, movePage, switchPage, state, currentPage };
 
 // ============================================================
 // INITIALIZATION
 // ============================================================
 async function init() {
   onDirty(queueAutosave);
+  populateBinderPresets();
   loadPrintScaleUI();
   loadHintsUI();
   applySectionStates();

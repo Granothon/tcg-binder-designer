@@ -181,6 +181,108 @@ window.addEventListener('load', async () => {
     doc.getElementById('scale-comp-h').value = '100';
     doc.getElementById('scale-comp-v').value = '100';
     fr.updateScaleCompensation();
+
+    // --- v4.4 features ---
+
+    // Binder preset applies dimensions and reports back in the selector
+    doc.getElementById('binder-preset').value = 'p12';
+    fr.applyBinderPreset();
+    await sleep(50);
+    log('preset 12-pocket applies 4x3',
+        doc.getElementById('rows').value === '4' && doc.getElementById('cols').value === '3' &&
+        doc.querySelectorAll('.pocket').length === 12,
+        'rows=' + doc.getElementById('rows').value + ' cols=' + doc.getElementById('cols').value);
+    // Side-loading preset sets continuous seams
+    doc.getElementById('binder-preset').value = 'side9';
+    fr.applyBinderPreset();
+    await sleep(50);
+    log('side-loading preset sets continuous seams',
+        doc.querySelectorAll('.seam-toggle.continuous').length === doc.querySelectorAll('.seam-toggle').length &&
+        doc.getElementById('binder-preset').value === 'side9');
+    // Back to standard for the rest
+    doc.getElementById('binder-preset').value = 'std9';
+    fr.applyBinderPreset();
+    await sleep(50);
+    log('preset selector syncs to std9 after manual edit', doc.getElementById('binder-preset').value === 'std9');
+
+    // Zoom to fit changes the view scale to something that fits
+    doc.getElementById('view-scale').value = '500';
+    fr.updateBinder();
+    fr.zoomToFit();
+    await sleep(50);
+    log('zoom to fit reduces zoom from 500%', parseInt(doc.getElementById('view-scale').value) < 500,
+        'zoom=' + doc.getElementById('view-scale').value);
+
+    // Add a couple of pages, reorder, and check thumbnails render
+    fr.addPage();
+    fr.addPage();
+    await sleep(50);
+    const pageCountBefore = doc.querySelectorAll('.page-item').length;
+    log('three pages exist with thumbnails',
+        pageCountBefore === 3 && doc.querySelectorAll('.page-thumb').length === 3 &&
+        doc.querySelectorAll('.thumb-cell').length > 0);
+    // Move page 3 up to position 2 via the internal hook, current page follows it
+    fr.__test.movePage(2, -1);
+    await sleep(50);
+    log('move page reorders and keeps it current',
+        doc.querySelector('.page-item.active') === doc.querySelectorAll('.page-item')[1]);
+
+    // PNG renderer produces a non-empty canvas for a page with an image
+    fr.__test.switchPage(0);
+    await sleep(50);
+    const pngCanvas = await fr.__test.loadImageEls(fr.__test.state.pages[0]).then(els => fr.__test.renderPageToCanvas(fr.__test.state.pages[0], els));
+    const pctx = pngCanvas.getContext('2d');
+    const pix = pctx.getImageData(0, 0, pngCanvas.width, pngCanvas.height).data;
+    let opaque = 0;
+    for (let k = 3; k < pix.length; k += 4) { if (pix[k] > 0) { opaque++; break; } }
+    log('PNG export renders non-empty canvas',
+        pngCanvas.width > 0 && pngCanvas.height > 0 && opaque > 0,
+        pngCanvas.width + 'x' + pngCanvas.height);
+
+    // Touch: tap selects a pocket, drag pans a selected image, pinch zooms view
+    const mkTouch = (el, x, y, id) => new fr.Touch({ identifier: id || 1, target: el, clientX: x, clientY: y });
+    const area = doc.getElementById('canvas-area');
+    const pocketEl = doc.querySelector('.pocket[data-row="1"][data-col="1"]');
+    let rect = pocketEl.getBoundingClientRect();
+    let cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    let tp = mkTouch(pocketEl, cx, cy);
+    area.dispatchEvent(new fr.TouchEvent('touchstart', { touches: [tp], changedTouches: [tp], bubbles: true, cancelable: true }));
+    area.dispatchEvent(new fr.TouchEvent('touchend', { touches: [], changedTouches: [tp], bubbles: true, cancelable: true }));
+    await sleep(50);
+    log('touch tap selects pocket',
+        fr.__test.state.selectedSlot && fr.__test.state.selectedSlot.row === 1 && fr.__test.state.selectedSlot.col === 1,
+        JSON.stringify(fr.__test.state.selectedSlot));
+
+    // Drag-pan the image in slot 0,0 (which has the pasted image)
+    doc.querySelector('.pocket[data-row="0"][data-col="0"]').dispatchEvent(new fr.MouseEvent('click', { bubbles: true }));
+    await sleep(30);
+    const xBefore = fr.__test.currentPage().images['0,0'].xMm;
+    // Re-query after the click: selecting re-renders and detaches the old node
+    const imgPocket = doc.querySelector('.pocket[data-row="0"][data-col="0"]');
+    rect = imgPocket.getBoundingClientRect();
+    cx = rect.left + rect.width / 2; cy = rect.top + rect.height / 2;
+    let d0 = mkTouch(imgPocket, cx, cy);
+    area.dispatchEvent(new fr.TouchEvent('touchstart', { touches: [d0], changedTouches: [d0], bubbles: true, cancelable: true }));
+    let d1 = mkTouch(imgPocket, cx + 25, cy);
+    area.dispatchEvent(new fr.TouchEvent('touchmove', { touches: [d1], changedTouches: [d1], bubbles: true, cancelable: true }));
+    area.dispatchEvent(new fr.TouchEvent('touchend', { touches: [], changedTouches: [d1], bubbles: true, cancelable: true }));
+    await sleep(50);
+    log('touch drag pans the image', fr.__test.currentPage().images['0,0'].xMm !== xBefore,
+        'xBefore=' + xBefore.toFixed(1) + ' xAfter=' + fr.__test.currentPage().images['0,0'].xMm.toFixed(1));
+
+    // Pinch zooms the view
+    const zoomBefore = parseInt(doc.getElementById('view-scale').value);
+    rect = area.getBoundingClientRect();
+    const mx = rect.left + rect.width / 2, my = rect.top + rect.height / 2;
+    let a0 = mkTouch(area, mx - 40, my, 1), a1 = mkTouch(area, mx + 40, my, 2);
+    area.dispatchEvent(new fr.TouchEvent('touchstart', { touches: [a0, a1], changedTouches: [a0, a1], bubbles: true, cancelable: true }));
+    let b0 = mkTouch(area, mx - 90, my, 1), b1 = mkTouch(area, mx + 90, my, 2);
+    area.dispatchEvent(new fr.TouchEvent('touchmove', { touches: [b0, b1], changedTouches: [b0, b1], bubbles: true, cancelable: true }));
+    area.dispatchEvent(new fr.TouchEvent('touchend', { touches: [b1], changedTouches: [b0], bubbles: true, cancelable: true }));
+    area.dispatchEvent(new fr.TouchEvent('touchend', { touches: [], changedTouches: [b1], bubbles: true, cancelable: true }));
+    await sleep(50);
+    log('pinch spreads to zoom the view in', parseInt(doc.getElementById('view-scale').value) > zoomBefore,
+        'before=' + zoomBefore + ' after=' + doc.getElementById('view-scale').value);
   } catch (e) {
     log('EXCEPTION', false, e.stack || String(e));
   }

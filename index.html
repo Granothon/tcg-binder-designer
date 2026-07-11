@@ -38,11 +38,24 @@
       <div id="pages-list" class="pages-list"></div>
       <button class="secondary full-width" onclick="addPage()">+ Add page</button>
       <button class="secondary full-width mt-5" onclick="duplicatePage()">Duplicate current</button>
+      <button class="secondary full-width mt-5" onclick="exportPagePng()" title="Save the current page as a PNG image to share your design">Export page as PNG</button>
     </div>
 
     <h2 class="collapsible mt-20" data-section="dimensions" onclick="toggleSection('dimensions')"><span class="caret">▾</span>Binder dimensions<span class="section-summary" id="dims-summary"></span></h2>
     <div class="section-body">
       <div class="subsection">
+        <div class="field">
+          <label>Preset</label>
+          <select id="binder-preset" onchange="applyBinderPreset()" title="Fill in typical dimensions for a common binder layout, then fine-tune to match yours">
+            <option value="custom" selected>Custom…</option>
+          </select>
+        </div>
+        <details class="info">
+          <summary>Presets are starting points — measure and adjust.</summary>
+          <div class="info-detail">
+            Pocket sizes and seams vary between binder brands. Pick the closest layout, then tweak the numbers below to match your binder exactly with a ruler.
+          </div>
+        </details>
         <div class="field"><label>Rows</label><input type="number" id="rows" min="1" max="5" value="3" onchange="updateBinder()"></div>
         <div class="field"><label>Columns</label><input type="number" id="cols" min="1" max="5" value="3" onchange="updateBinder()"></div>
         <div class="field"><label>Pocket W (mm)</label><input type="number" id="pocket-w" min="30" max="150" value="68" step="0.5" onchange="updateBinder()"></div>
@@ -62,6 +75,7 @@
           <button class="zoom-btn" onclick="zoomView(10)" title="Zoom in">+</button>
           <span id="zoom-value" class="zoom-value" onclick="resetZoom()" title="Click to reset zoom (Ctrl+0)">100%</span>
         </div>
+        <button class="secondary full-width mt-5" onclick="zoomToFit()" title="Zoom so the whole page fits the window">Fit to window</button>
         <div class="legend">
           <div class="legend-item"><div class="legend-swatch swatch-cut"></div>Cut</div>
           <div class="legend-item"><div class="legend-swatch swatch-continuous"></div>Continuous</div>
@@ -246,6 +260,9 @@
         </div>
       </details>
       <div id="print-fit-result"></div>
+      <div class="calib-hint">
+        First time with this printer? Print the <b>calibration page</b> first to confirm it prints at true size.
+      </div>
       <div class="modal-actions">
         <button class="secondary" onclick="printCalibration()" title="Print a 100 mm test ruler to verify your printer is not scaling the page">Calibration page</button>
         <button class="secondary" onclick="closePrintDialog()">Cancel</button>
@@ -263,10 +280,29 @@
         Design custom inserts, plan Michi Method spreads, and export print-ready layouts with millimeter-accurate dimensions.
       </p>
       <p class="modal-para">
-        <b>Version:</b> 4.3<br>
+        <b>Version:</b> 4.4<br>
         <b>License:</b> MIT (free and open source)<br>
         <b>Author:</b> Risto Ruuskanen
       </p>
+      <details class="shortcuts-details">
+        <summary>Keyboard shortcuts &amp; gestures</summary>
+        <table class="shortcuts-table">
+          <tr><td>Click / tap pocket</td><td>Select it</td></tr>
+          <tr><td>Drag across pockets</td><td>Select an area</td></tr>
+          <tr><td>Drag / one-finger drag on image</td><td>Pan the image</td></tr>
+          <tr><td>Wheel / pinch over image</td><td>Zoom the image</td></tr>
+          <tr><td>Wheel / pinch over canvas</td><td>Zoom the view</td></tr>
+          <tr><td>Arrow keys</td><td>Nudge image 1 mm (Shift = 10 mm)</td></tr>
+          <tr><td>+ / −</td><td>Zoom image (or view) in / out</td></tr>
+          <tr><td>Ctrl/Cmd + Z / Y</td><td>Undo / redo</td></tr>
+          <tr><td>Ctrl/Cmd + C / V</td><td>Copy / paste crop (or paste an image)</td></tr>
+          <tr><td>E</td><td>Mark / unmark intentional empty</td></tr>
+          <tr><td>Delete</td><td>Remove image or empty mark</td></tr>
+          <tr><td>Ctrl/Cmd + 0</td><td>Reset zoom to 100%</td></tr>
+          <tr><td>Alt + drag image</td><td>Move / swap between pockets</td></tr>
+          <tr><td>Right-click / long-press</td><td>Context menu</td></tr>
+        </table>
+      </details>
       <div class="attribution">
         The Michi Method was popularized by <a href="https://instagram.com/peeplop" target="_blank" rel="noopener">@peeplop</a> on Instagram. Michify is an independent tool that supports designing for this method but is not officially affiliated with any Michi Method creators or communities.
       </div>

@@ -13,6 +13,8 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 ## Features
 
 - **Custom binder dimensions** — set exact pocket width, height, and seam sizes for your specific binder
+- **Binder presets** — start from a common layout (standard 9-pocket, 12-pocket, 16-pocket, side-loading, and more) and fine-tune from there
+- **Touch & tablet support** — tap to select, drag to pan an image, pinch to zoom, and long-press for the context menu
 - **Multi-pocket image slots** — design artwork spanning multiple pockets in any rectangular configuration
 - **Undo / redo** — Ctrl+Z / Ctrl+Y (or the header buttons) step back through every edit
 - **Autosave & session restore** — work is continuously saved in your browser; if the tab closes, Michify offers to restore it on the next visit
@@ -23,10 +25,13 @@ Unlike collection management apps that focus on tracking cards, Michify is a pre
 - **Absolute mm-based sizing** — same zoom shows the same image size across different slot dimensions
 - **Smart image handling** — auto-fit cover mode, drag to pan, wheel to zoom, arrow keys for pixel-precision
 - **Copy and clone** — copy image crops between slots, move or swap images between slots
-- **Multi-page projects** — design a whole binder in one session, save as JSON for later editing
+- **Multi-page projects** — design a whole binder in one session, reorder pages, save as JSON for later editing
+- **Page thumbnails** — the page list shows a small schematic of each page's layout for quick navigation
+- **Export as PNG** — save any page as an image to share your design
+- **Fit to window** — one click zooms the whole page to fit your screen, handy for large binders
 - **Rounded corners** — optional preview and print output with rounded corners; default radius matches the official TCG card standard
 - **Print quality guidance** — the print dialog lists every image that would look soft at its intended size, with its page and pocket location
-- **Clean, collapsible UI** — sidebar sections fold away and the built-in hint texts can be hidden once you know the tool
+- **Clean, collapsible UI** — sidebar sections fold away, hint texts expand on demand and can be hidden once you know the tool, and a keyboard-shortcut reference lives in the About dialog
 - **Smart bin-packing printing** — automatically arranges pieces on A4/A3 sheets with proper cutting margins
 - **Print calibration page** — a 100 mm test ruler that verifies your printer is not scaling the page before you commit paper and ink
 - **Scale compensation** — for precision printing: enter the measured lengths of the calibration bars and Michify counter-scales the output per axis to cancel your printer's remaining error
