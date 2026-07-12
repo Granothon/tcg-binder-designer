@@ -223,19 +223,23 @@ window.addEventListener('load', async () => {
         pageCountBefore === 3 && doc.querySelectorAll('.page-thumb').length === 3 &&
         doc.querySelectorAll('.thumb-cell').length > 0);
 
-    // Page label format + rename (page number always shown)
-    log('default page label is "RxC (pN)"',
-        doc.querySelectorAll('.page-label')[0].textContent === '3x3 (p1)',
+    // Page label format + free rename (default "Page N (RxC)")
+    log('default page label is "Page N (RxC)"',
+        doc.querySelectorAll('.page-label')[0].textContent === 'Page 1 (3x3)',
         doc.querySelectorAll('.page-label')[0].textContent);
     fr.__test.renamePage(0, 'Pikachu');
     await sleep(30);
-    log('renamed page keeps its number', doc.querySelectorAll('.page-label')[0].textContent === 'Pikachu (p1)',
+    log('custom name replaces the label freely', doc.querySelectorAll('.page-label')[0].textContent === 'Pikachu',
         doc.querySelectorAll('.page-label')[0].textContent);
+    fr.__test.renamePage(0, 'x'.repeat(40));
+    await sleep(20);
+    log('name is capped at 20 chars', doc.querySelectorAll('.page-label')[0].textContent.length === 20,
+        'len=' + doc.querySelectorAll('.page-label')[0].textContent.length);
     fr.__test.renamePage(0, '<b>x</b>');
     await sleep(30);
     const lbl = doc.querySelectorAll('.page-label')[0];
     log('page name is rendered as text not HTML',
-        lbl.querySelector('b') === null && lbl.textContent === '<b>x</b> (p1)', lbl.textContent);
+        lbl.querySelector('b') === null && lbl.textContent === '<b>x</b>', lbl.textContent);
     fr.__test.renamePage(0, ''); // clear back to default
     await sleep(20);
 

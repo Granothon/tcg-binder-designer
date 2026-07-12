@@ -1456,10 +1456,11 @@ function renderPagesList() {
 
     const label = document.createElement('span');
     label.className = 'page-label';
-    // "<name> (pN)": the page number always shows; the name defaults to the
-    // grid size but can be renamed (right-click / long-press).
-    const base = page.name && page.name.trim() ? page.name : (page.rows + 'x' + page.cols);
-    label.textContent = base + ' (p' + (i + 1) + ')';
+    // Default label is "Page N (RxC)"; a custom name (right-click / long-press)
+    // replaces it entirely.
+    label.textContent = (page.name && page.name.trim())
+      ? page.name
+      : 'Page ' + (i + 1) + ' (' + page.rows + 'x' + page.cols + ')';
     item.appendChild(label);
 
     const del = document.createElement('button');
@@ -1479,7 +1480,7 @@ function renderPagesList() {
 
 // ---- page rename ----
 function renamePage(i, name) {
-  const trimmed = (name || '').trim().slice(0, 60);
+  const trimmed = (name || '').trim().slice(0, 20);
   pushHistory();
   if (trimmed) state.pages[i].name = trimmed;
   else delete state.pages[i].name;
@@ -1489,7 +1490,7 @@ function renamePage(i, name) {
 
 function promptRenamePage(i) {
   const current = state.pages[i].name || '';
-  const name = prompt('Page name (leave empty to use the grid size):', current);
+  const name = prompt('Page name (max 20 chars, leave empty for default):', current);
   if (name === null) return; // cancelled
   renamePage(i, name);
 }

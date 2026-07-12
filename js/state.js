@@ -185,7 +185,7 @@ export function normalizeProjectData(data) {
     if (!page.emptyPockets) page.emptyPockets = [];
     if (!page.images) page.images = {};
     // Optional page name (rendered via textContent): keep only a bounded string
-    if (typeof page.name === 'string') page.name = page.name.slice(0, 60);
+    if (typeof page.name === 'string') page.name = page.name.slice(0, 20);
     else delete page.name;
     for (const key in page.images) {
       const img = page.images[key];
