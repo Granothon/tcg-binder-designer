@@ -222,6 +222,23 @@ window.addEventListener('load', async () => {
     log('three pages exist with thumbnails',
         pageCountBefore === 3 && doc.querySelectorAll('.page-thumb').length === 3 &&
         doc.querySelectorAll('.thumb-cell').length > 0);
+
+    // Page label format + rename (page number always shown)
+    log('default page label is "RxC (pN)"',
+        doc.querySelectorAll('.page-label')[0].textContent === '3x3 (p1)',
+        doc.querySelectorAll('.page-label')[0].textContent);
+    fr.__test.renamePage(0, 'Pikachu');
+    await sleep(30);
+    log('renamed page keeps its number', doc.querySelectorAll('.page-label')[0].textContent === 'Pikachu (p1)',
+        doc.querySelectorAll('.page-label')[0].textContent);
+    fr.__test.renamePage(0, '<b>x</b>');
+    await sleep(30);
+    const lbl = doc.querySelectorAll('.page-label')[0];
+    log('page name is rendered as text not HTML',
+        lbl.querySelector('b') === null && lbl.textContent === '<b>x</b> (p1)', lbl.textContent);
+    fr.__test.renamePage(0, ''); // clear back to default
+    await sleep(20);
+
     // Reorder: move page at index 2 to insertion index 1; current follows it
     fr.__test.movePageTo(2, 1);
     await sleep(50);

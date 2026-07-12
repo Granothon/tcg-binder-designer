@@ -184,6 +184,9 @@ export function normalizeProjectData(data) {
     while (page.seamsV.length > page.rows - 1) page.seamsV.pop();
     if (!page.emptyPockets) page.emptyPockets = [];
     if (!page.images) page.images = {};
+    // Optional page name (rendered via textContent): keep only a bounded string
+    if (typeof page.name === 'string') page.name = page.name.slice(0, 60);
+    else delete page.name;
     for (const key in page.images) {
       const img = page.images[key];
       // Coerce slot spans to positive integers within the grid. Loaded data

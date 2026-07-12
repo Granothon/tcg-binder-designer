@@ -1178,12 +1178,16 @@ function buildContextItems(ctx) {
 }
 
 function showContextMenu(e, ctx) {
+  openContextMenu(e, buildContextItems(ctx));
+}
+
+// Generic context-menu renderer used by both pockets and the page list.
+function openContextMenu(e, items) {
   e.preventDefault();
   closeContextMenu();
   const menu = document.createElement('div');
   menu.className = 'context-menu';
 
-  const items = buildContextItems(ctx);
   items.forEach(it => {
     if (it.separator) {
       const sep = document.createElement('div');
@@ -1452,7 +1456,10 @@ function renderPagesList() {
 
     const label = document.createElement('span');
     label.className = 'page-label';
-    label.textContent = 'Page ' + (i + 1) + ' (' + page.rows + 'x' + page.cols + ')';
+    // "<name> (pN)": the page number always shows; the name defaults to the
+    // grid size but can be renamed (right-click / long-press).
+    const base = page.name && page.name.trim() ? page.name : (page.rows + 'x' + page.cols);
+    label.textContent = base + ' (p' + (i + 1) + ')';
     item.appendChild(label);
 
     const del = document.createElement('button');
@@ -1465,22 +1472,69 @@ function renderPagesList() {
     // Pointer-based drag reorder (works with mouse and touch); a short
     // press without movement is treated as a tap that switches page.
     item.addEventListener('pointerdown', (e) => onPagePointerDown(e, i));
+    item.addEventListener('contextmenu', (e) => openPageContextMenu(e, i));
     list.appendChild(item);
   });
 }
 
+// ---- page rename ----
+function renamePage(i, name) {
+  const trimmed = (name || '').trim().slice(0, 60);
+  pushHistory();
+  if (trimmed) state.pages[i].name = trimmed;
+  else delete state.pages[i].name;
+  renderPagesList();
+  setStatus(trimmed ? 'Page renamed to "' + trimmed + '"' : 'Page name cleared');
+}
+
+function promptRenamePage(i) {
+  const current = state.pages[i].name || '';
+  const name = prompt('Page name (leave empty to use the grid size):', current);
+  if (name === null) return; // cancelled
+  renamePage(i, name);
+}
+
+function openPageContextMenu(e, i) {
+  openContextMenu(e, [
+    { label: 'Rename…', action: () => promptRenamePage(i) },
+    { separator: true },
+    { label: 'Duplicate', action: () => { switchPage(i); duplicatePage(); } },
+    { label: 'Delete page', disabled: state.pages.length === 1, action: () => deletePage(i) }
+  ]);
+}
+
 // ---- page drag reorder ----
-let pageDrag = null; // { index, startY, pointerId, dragging, item }
+let pageDrag = null; // { index, startY, pointerId, dragging, item, pressTimer }
 
 function onPagePointerDown(e, index) {
   if (e.button != null && e.button !== 0) return;
   if (e.target.closest('.del')) return; // let the delete button work
   const item = e.currentTarget;
-  pageDrag = { index, startY: e.clientY, pointerId: e.pointerId, dragging: false, item };
+  pageDrag = { index, startY: e.clientY, pointerId: e.pointerId, dragging: false, item, pressTimer: null };
   try { item.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+  // Touch long-press opens the page menu (mouse users right-click instead)
+  if (e.pointerType === 'touch') {
+    pageDrag.pressTimer = setTimeout(() => {
+      if (!pageDrag || pageDrag.dragging) return;
+      const idx = pageDrag.index;
+      detachPageDragListeners(item);
+      pageDrag = null;
+      openPageContextMenu({ clientX: e.clientX, clientY: e.clientY, preventDefault() {} }, idx);
+    }, LONG_PRESS_MS);
+  }
   item.addEventListener('pointermove', onPagePointerMove);
   item.addEventListener('pointerup', onPagePointerUp);
   item.addEventListener('pointercancel', onPagePointerUp);
+}
+
+function clearPagePress() {
+  if (pageDrag && pageDrag.pressTimer) { clearTimeout(pageDrag.pressTimer); pageDrag.pressTimer = null; }
+}
+
+function detachPageDragListeners(item) {
+  item.removeEventListener('pointermove', onPagePointerMove);
+  item.removeEventListener('pointerup', onPagePointerUp);
+  item.removeEventListener('pointercancel', onPagePointerUp);
 }
 
 // Insertion index (0..n) the current pointer Y maps to, ignoring the
@@ -1507,6 +1561,7 @@ function showPageDropIndicator(dropIdx) {
 function onPagePointerMove(e) {
   if (!pageDrag || e.pointerId !== pageDrag.pointerId) return;
   if (!pageDrag.dragging && Math.abs(e.clientY - pageDrag.startY) < 6) return;
+  clearPagePress();
   pageDrag.dragging = true;
   pageDrag.item.classList.add('dragging');
   showPageDropIndicator(pageDropIndex(e.clientY));
@@ -1514,10 +1569,9 @@ function onPagePointerMove(e) {
 
 function onPagePointerUp(e) {
   if (!pageDrag || e.pointerId !== pageDrag.pointerId) return;
+  clearPagePress();
   const { index, dragging, item } = pageDrag;
-  item.removeEventListener('pointermove', onPagePointerMove);
-  item.removeEventListener('pointerup', onPagePointerUp);
-  item.removeEventListener('pointercancel', onPagePointerUp);
+  detachPageDragListeners(item);
   try { item.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
   if (dragging) {
     const dropIdx = pageDropIndex(e.clientY);
@@ -2761,7 +2815,7 @@ Object.assign(window, {
 });
 
 // Internal hooks for the e2e harness only.
-window.__test = { renderPageToCanvas, loadImageEls, movePageTo, switchPage, state, currentPage, applyProjectData };
+window.__test = { renderPageToCanvas, loadImageEls, movePageTo, switchPage, state, currentPage, applyProjectData, renamePage };
 
 // ============================================================
 // INITIALIZATION
