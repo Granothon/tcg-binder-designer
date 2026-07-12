@@ -221,10 +221,10 @@ window.addEventListener('load', async () => {
     log('three pages exist with thumbnails',
         pageCountBefore === 3 && doc.querySelectorAll('.page-thumb').length === 3 &&
         doc.querySelectorAll('.thumb-cell').length > 0);
-    // Move page 3 up to position 2 via the internal hook, current page follows it
-    fr.__test.movePage(2, -1);
+    // Reorder: move page at index 2 to insertion index 1; current follows it
+    fr.__test.movePageTo(2, 1);
     await sleep(50);
-    log('move page reorders and keeps it current',
+    log('reorder moves page and keeps it current',
         doc.querySelector('.page-item.active') === doc.querySelectorAll('.page-item')[1]);
 
     // PNG renderer produces a non-empty canvas for a page with an image
@@ -283,6 +283,29 @@ window.addEventListener('load', async () => {
     await sleep(50);
     log('pinch spreads to zoom the view in', parseInt(doc.getElementById('view-scale').value) > zoomBefore,
         'before=' + zoomBefore + ' after=' + doc.getElementById('view-scale').value);
+
+    // Drag reorder via pointer events: grab the page with the image (index 0)
+    // and drop it last. Identity is checked via the thumbnail image cell,
+    // since labels are position-based. Kept last so earlier image-dependent
+    // tests run with page 0 intact.
+    fr.__test.switchPage(0);
+    await sleep(30);
+    let items = doc.querySelectorAll('.page-item');
+    let r0 = items[0].getBoundingClientRect();
+    let rLast = items[items.length - 1].getBoundingClientRect();
+    const pd = (type, y, el) => el.dispatchEvent(new fr.PointerEvent(type, { pointerId: 7, clientX: r0.left + 20, clientY: y, bubbles: true, cancelable: true, button: 0 }));
+    pd('pointerdown', r0.top + 10, items[0]);
+    pd('pointermove', rLast.bottom + 5, items[0]);
+    await sleep(20);
+    const indicatorShown = !!doc.querySelector('.page-item.drop-below, .page-item.drop-above');
+    pd('pointerup', rLast.bottom + 5, items[0]);
+    await sleep(50);
+    items = doc.querySelectorAll('.page-item');
+    const last = items[items.length - 1];
+    log('drag reorder moves page to the end and shows indicator',
+        indicatorShown && !!last.querySelector('.thumb-cell.has-image') &&
+        doc.querySelector('.page-item.active') === last,
+        'indicator=' + indicatorShown);
   } catch (e) {
     log('EXCEPTION', false, e.stack || String(e));
   }

@@ -1440,6 +1440,13 @@ function renderPagesList() {
   state.pages.forEach((page, i) => {
     const item = document.createElement('div');
     item.className = 'page-item' + (i === state.currentPage ? ' active' : '');
+    item.dataset.index = i;
+
+    const grip = document.createElement('span');
+    grip.className = 'page-grip';
+    grip.textContent = '⋮⋮';
+    grip.title = 'Drag to reorder';
+    item.appendChild(grip);
 
     item.appendChild(buildPageThumbnail(page));
 
@@ -1448,46 +1455,93 @@ function renderPagesList() {
     label.textContent = 'Page ' + (i + 1) + ' (' + page.rows + 'x' + page.cols + ')';
     item.appendChild(label);
 
-    const controls = document.createElement('div');
-    controls.className = 'page-controls';
-    const up = document.createElement('button');
-    up.className = 'page-move';
-    up.textContent = '▲';
-    up.title = 'Move page up';
-    up.disabled = i === 0;
-    up.addEventListener('click', (e) => { e.stopPropagation(); movePage(i, -1); });
-    const down = document.createElement('button');
-    down.className = 'page-move';
-    down.textContent = '▼';
-    down.title = 'Move page down';
-    down.disabled = i === state.pages.length - 1;
-    down.addEventListener('click', (e) => { e.stopPropagation(); movePage(i, 1); });
     const del = document.createElement('button');
     del.className = 'del';
     del.textContent = '×';
     del.title = 'Delete page';
     del.addEventListener('click', (e) => { e.stopPropagation(); deletePage(i); });
-    controls.appendChild(up);
-    controls.appendChild(down);
-    controls.appendChild(del);
-    item.appendChild(controls);
+    item.appendChild(del);
 
-    item.addEventListener('click', () => switchPage(i));
+    // Pointer-based drag reorder (works with mouse and touch); a short
+    // press without movement is treated as a tap that switches page.
+    item.addEventListener('pointerdown', (e) => onPagePointerDown(e, i));
     list.appendChild(item);
   });
 }
 
-// Move a page one step up (-1) or down (+1), keeping it the current page.
-function movePage(i, dir) {
-  const j = i + dir;
-  if (j < 0 || j >= state.pages.length) return;
+// ---- page drag reorder ----
+let pageDrag = null; // { index, startY, pointerId, dragging, item }
+
+function onPagePointerDown(e, index) {
+  if (e.button != null && e.button !== 0) return;
+  if (e.target.closest('.del')) return; // let the delete button work
+  const item = e.currentTarget;
+  pageDrag = { index, startY: e.clientY, pointerId: e.pointerId, dragging: false, item };
+  try { item.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+  item.addEventListener('pointermove', onPagePointerMove);
+  item.addEventListener('pointerup', onPagePointerUp);
+  item.addEventListener('pointercancel', onPagePointerUp);
+}
+
+// Insertion index (0..n) the current pointer Y maps to, ignoring the
+// dragged item's own slot.
+function pageDropIndex(clientY) {
+  const items = Array.from(document.querySelectorAll('#pages-list .page-item'));
+  for (let k = 0; k < items.length; k++) {
+    const rect = items[k].getBoundingClientRect();
+    if (clientY < rect.top + rect.height / 2) return k;
+  }
+  return items.length;
+}
+
+function showPageDropIndicator(dropIdx) {
+  const items = Array.from(document.querySelectorAll('#pages-list .page-item'));
+  items.forEach(el => el.classList.remove('drop-above', 'drop-below'));
+  if (dropIdx >= items.length) {
+    if (items.length) items[items.length - 1].classList.add('drop-below');
+  } else {
+    items[dropIdx].classList.add('drop-above');
+  }
+}
+
+function onPagePointerMove(e) {
+  if (!pageDrag || e.pointerId !== pageDrag.pointerId) return;
+  if (!pageDrag.dragging && Math.abs(e.clientY - pageDrag.startY) < 6) return;
+  pageDrag.dragging = true;
+  pageDrag.item.classList.add('dragging');
+  showPageDropIndicator(pageDropIndex(e.clientY));
+}
+
+function onPagePointerUp(e) {
+  if (!pageDrag || e.pointerId !== pageDrag.pointerId) return;
+  const { index, dragging, item } = pageDrag;
+  item.removeEventListener('pointermove', onPagePointerMove);
+  item.removeEventListener('pointerup', onPagePointerUp);
+  item.removeEventListener('pointercancel', onPagePointerUp);
+  try { item.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+  if (dragging) {
+    const dropIdx = pageDropIndex(e.clientY);
+    pageDrag = null;
+    movePageTo(index, dropIdx);
+  } else {
+    pageDrag = null;
+    switchPage(index); // it was a tap
+  }
+}
+
+// Move the page at `from` to insertion index `to` (0..length), keeping the
+// same page selected as the current one.
+function movePageTo(from, to) {
+  if (to < 0 || to > state.pages.length) return;
+  let dest = to > from ? to - 1 : to;
+  if (dest === from) { renderPagesList(); return; } // no change
   pushHistory();
-  const [pg] = state.pages.splice(i, 1);
-  state.pages.splice(j, 0, pg);
-  if (state.currentPage === i) state.currentPage = j;
-  else if (state.currentPage === j) state.currentPage = i;
+  const cur = state.pages[state.currentPage];
+  const [pg] = state.pages.splice(from, 1);
+  state.pages.splice(dest, 0, pg);
+  state.currentPage = state.pages.indexOf(cur);
   renderPagesList();
-  setStatus('Moved page ' + (i + 1) + ' to position ' + (j + 1));
+  setStatus('Page moved to position ' + (dest + 1));
 }
 
 function addPage() {
@@ -2707,7 +2761,7 @@ Object.assign(window, {
 });
 
 // Internal hooks for the e2e harness only.
-window.__test = { renderPageToCanvas, loadImageEls, movePage, switchPage, state, currentPage };
+window.__test = { renderPageToCanvas, loadImageEls, movePageTo, switchPage, state, currentPage };
 
 // ============================================================
 // INITIALIZATION

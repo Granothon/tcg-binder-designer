@@ -177,7 +177,40 @@ h2 {
   font-size: 16px;
 }
 .page-item .del:hover { color: #F43256; }
+.page-item {
+  /* We drive reordering with pointer events; stop the browser from
+     scrolling the sidebar while a drag is in progress on touch. */
+  touch-action: none;
+  position: relative;
+}
 .page-item .page-label { flex: 1; margin: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-grip {
+  color: #666;
+  cursor: grab;
+  font-size: 11px;
+  letter-spacing: -2px;
+  margin-right: 6px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.page-item:hover .page-grip { color: #999; }
+.page-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+/* Drop indicator: an accent line at the insertion point */
+.page-item.drop-above::before,
+.page-item.drop-below::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #FFB000;
+  z-index: 5;
+}
+.page-item.drop-above::before { top: -4px; }
+.page-item.drop-below::after { bottom: -4px; }
 .page-thumb {
   display: grid;
   gap: 1px;
@@ -192,18 +225,6 @@ h2 {
 .thumb-cell.empty-mark {
   background: repeating-linear-gradient(45deg, #333 0, #333 1.5px, #555 1.5px, #555 3px);
 }
-.page-controls { display: flex; align-items: center; gap: 1px; flex-shrink: 0; }
-.page-move {
-  background: transparent;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  padding: 0 2px;
-  font-size: 9px;
-  line-height: 1;
-}
-.page-move:hover:not(:disabled) { color: #FFB000; }
-.page-move:disabled { color: #555; cursor: default; }
 
 /* ============================================================
    BUTTONS
