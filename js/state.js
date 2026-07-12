@@ -9,6 +9,14 @@
 
 import { slotSizeMm } from './geometry.js';
 
+// Coerce an untrusted value to an integer within [min, max]; non-numeric
+// input falls back to min. Used when normalizing loaded project data.
+function clampInt(v, min, max) {
+  const n = parseInt(v);
+  if (!isFinite(n)) return min;
+  return Math.min(max, Math.max(min, n));
+}
+
 export const HISTORY_LIMIT = 50;
 // Consecutive pushes with the same tag inside this window collapse into one
 // undo step (wheel zoom bursts, arrow-key nudges, drag pans).
@@ -178,8 +186,11 @@ export function normalizeProjectData(data) {
     if (!page.images) page.images = {};
     for (const key in page.images) {
       const img = page.images[key];
-      if (!img.slotW) img.slotW = 1;
-      if (!img.slotH) img.slotH = 1;
+      // Coerce slot spans to positive integers within the grid. Loaded data
+      // is untrusted: these values flow into innerHTML (the properties panel),
+      // so a non-numeric string here would be an injection vector.
+      img.slotW = clampInt(img.slotW, 1, Math.max(1, page.cols));
+      img.slotH = clampInt(img.slotH, 1, Math.max(1, page.rows));
       if (img.widthMm === undefined && img.scale !== undefined) {
         const slot = slotSizeMm(page, img.slotW, img.slotH);
         img.widthMm = slot.w * img.scale;
@@ -196,12 +207,16 @@ export function normalizeProjectData(data) {
       delete img._pxMeasureInProgress;
     }
   });
+  const cr = parseFloat(data.cornerRadius);
+  const im = parseInt(data.imageMaxDim);
   return {
     pages: data.pages,
     currentPage: Math.min(parseInt(data.currentPage) || 0, data.pages.length - 1),
-    cornerMode: data.cornerMode === undefined ? 'none' : data.cornerMode,
-    cornerRadius: data.cornerRadius === undefined ? 3.18 : data.cornerRadius,
-    imageMaxDim: data.imageMaxDim === undefined ? 3000 : data.imageMaxDim
+    // Whitelist / coerce these too: cornerRadius reaches innerHTML (print
+    // dialog) and cornerMode gates it, so untrusted values must be sanitized.
+    cornerMode: ['none', 'outer', 'every'].includes(data.cornerMode) ? data.cornerMode : 'none',
+    cornerRadius: isFinite(cr) ? Math.min(20, Math.max(0.1, cr)) : 3.18,
+    imageMaxDim: isFinite(im) && im >= 0 ? im : 3000
   };
 }
 

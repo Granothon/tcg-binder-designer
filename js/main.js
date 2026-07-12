@@ -2761,7 +2761,7 @@ Object.assign(window, {
 });
 
 // Internal hooks for the e2e harness only.
-window.__test = { renderPageToCanvas, loadImageEls, movePageTo, switchPage, state, currentPage };
+window.__test = { renderPageToCanvas, loadImageEls, movePageTo, switchPage, state, currentPage, applyProjectData };
 
 // ============================================================
 // INITIALIZATION

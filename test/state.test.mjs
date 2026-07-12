@@ -117,6 +117,36 @@ test('normalizeProjectData rejects invalid input', () => {
   assert.throws(() => normalizeProjectData({ pages: [] }));
 });
 
+test('normalizeProjectData sanitizes untrusted fields that reach innerHTML', () => {
+  const payload = '<img src=x onerror=alert(1)>';
+  const page = Object.assign(createEmptyPage(), {
+    images: { '0,0': { src: 'data:x', widthMm: 100, xMm: 0, yMm: 0, rotate: 0, slotW: payload, slotH: payload } }
+  });
+  const norm = normalizeProjectData({ pages: [page], cornerMode: payload, cornerRadius: payload, imageMaxDim: payload });
+  // Enum whitelisted, numbers coerced — no payload string survives
+  assert.equal(norm.cornerMode, 'none');
+  assert.equal(typeof norm.cornerRadius, 'number');
+  assert.equal(norm.cornerRadius, 3.18);
+  assert.equal(typeof norm.imageMaxDim, 'number');
+  const img = norm.pages[0].images['0,0'];
+  assert.equal(Number.isInteger(img.slotW), true);
+  assert.equal(Number.isInteger(img.slotH), true);
+  assert.equal(img.slotW >= 1, true);
+  assert.equal(img.slotH >= 1, true);
+});
+
+test('normalizeProjectData clamps cornerRadius and slot spans to sane ranges', () => {
+  const page = Object.assign(createEmptyPage(), { rows: 3, cols: 3,
+    images: { '0,0': { src: 'data:x', widthMm: 100, xMm: 0, yMm: 0, rotate: 0, slotW: 999, slotH: 0 } }
+  });
+  const norm = normalizeProjectData({ pages: [page], cornerMode: 'outer', cornerRadius: 99999 });
+  assert.equal(norm.cornerMode, 'outer'); // valid enum kept
+  assert.equal(norm.cornerRadius <= 20, true);
+  const img = norm.pages[0].images['0,0'];
+  assert.equal(img.slotW, 3); // clamped to grid width
+  assert.equal(img.slotH, 1); // 0 clamped up to 1
+});
+
 test('projectHasContent detects images, empties and extra pages', () => {
   assert.equal(projectHasContent({ pages: [createEmptyPage()] }), false);
   assert.equal(projectHasContent({ pages: [createEmptyPage(), createEmptyPage()] }), true);

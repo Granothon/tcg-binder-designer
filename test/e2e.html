@@ -306,6 +306,33 @@ window.addEventListener('load', async () => {
         indicatorShown && !!last.querySelector('.thumb-cell.has-image') &&
         doc.querySelector('.page-item.active') === last,
         'indicator=' + indicatorShown);
+
+    // Security: loading a malicious project must not execute a payload, even
+    // after opening the print dialog and selecting the image slot.
+    fr.__xss = false;
+    const evil = (h) => '<img src=x onerror="parent.frames[0].__xss=true;window.__xss=true">' + h;
+    const evilProject = {
+      app: 'michify', version: 2,
+      cornerMode: 'outer',
+      cornerRadius: evil('r'),
+      imageMaxDim: evil('q'),
+      currentPage: 0,
+      pages: [{
+        rows: 3, cols: 3, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2,
+        seamsH: ['cut', 'cut'], seamsV: ['cut', 'cut'], emptyPockets: [],
+        images: { '0,0': { src: 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=', widthMm: 100, xMm: 0, yMm: 0, rotate: 0, slotW: evil('w'), slotH: evil('h') } }
+      }]
+    };
+    fr.__test.applyProjectData(evilProject);
+    await sleep(100);
+    fr.updatePrintFit();          // cornerRadius sink
+    doc.querySelector('.pocket[data-row="0"][data-col="0"]').dispatchEvent(new fr.MouseEvent('click', { bubbles: true }));
+    await sleep(150);             // slotW/slotH sink + any onerror
+    const cr = fr.__test.state.cornerRadius;
+    const sw = fr.__test.currentPage().images['0,0'].slotW;
+    log('malicious project is sanitized and no payload runs',
+        fr.__xss === false && !window.__xss && typeof cr === 'number' && typeof sw === 'number',
+        'xss=' + fr.__xss + ' cornerRadius=' + cr + ' slotW=' + sw);
   } catch (e) {
     log('EXCEPTION', false, e.stack || String(e));
   }
