@@ -185,11 +185,12 @@ window.addEventListener('load', async () => {
     // --- v4.4 features ---
 
     // Binder preset applies dimensions and reports back in the selector
+    // (12-pocket is 4 columns wide by 3 rows tall)
     doc.getElementById('binder-preset').value = 'p12';
     fr.applyBinderPreset();
     await sleep(50);
-    log('preset 12-pocket applies 4x3',
-        doc.getElementById('rows').value === '4' && doc.getElementById('cols').value === '3' &&
+    log('preset 12-pocket applies 4 wide x 3 tall',
+        doc.getElementById('rows').value === '3' && doc.getElementById('cols').value === '4' &&
         doc.querySelectorAll('.pocket').length === 12,
         'rows=' + doc.getElementById('rows').value + ' cols=' + doc.getElementById('cols').value);
     // Side-loading preset sets continuous seams

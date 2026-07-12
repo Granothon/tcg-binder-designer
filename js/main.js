@@ -276,7 +276,7 @@ function updateDimensionsSummary() {
 // (standard 9-pocket has cut seams; side-loading has continuous seams).
 const BINDER_PRESETS = [
   { id: 'std9', name: 'Standard 9-pocket (3×3)', rows: 3, cols: 3, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
-  { id: 'p12', name: '12-pocket (4×3)', rows: 4, cols: 3, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
+  { id: 'p12', name: '12-pocket (4 wide × 3 tall)', rows: 3, cols: 4, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
   { id: 'p16', name: '16-pocket (4×4)', rows: 4, cols: 4, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
   { id: 'p4', name: '4-pocket (2×2)', rows: 2, cols: 2, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'cut' },
   { id: 'side9', name: 'Side-loading 9-pocket (continuous)', rows: 3, cols: 3, pocketW: 68, pocketH: 93, seamH: 2, seamV: 2, seams: 'continuous' },
